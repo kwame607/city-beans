@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import cityBeansLogoCream from "./assets/cream.png";
 import cityBeansLogoDark from "./assets/dark.png";
+import { useMenuData } from "./hooks/useMenuData";
 import {
   ArrowRight,
   ChevronLeft,
@@ -51,349 +52,6 @@ const CATEGORIES = [
 ];
 
 /* =========================================================
-   EXTRAS
-========================================================= */
-
-const EXTRAS = {
-  chicken: {
-    id: "chicken",
-    name: "Chicken",
-    price: 10,
-  },
-  fish: {
-    id: "fish",
-    name: "Fish",
-    price: 10,
-  },
-  egg: {
-    id: "egg",
-    name: "Egg",
-    price: 5,
-  },
-  sausage: {
-    id: "sausage",
-    name: "Sausage",
-    price: 5,
-  },
-  avocado: {
-    id: "avocado",
-    name: "Avocado",
-    price: 10,
-  },
-  meat: {
-    id: "meat",
-    name: "Meat",
-    price: 6,
-  },
-  salad: {
-    id: "salad",
-    name: "Salad",
-    price: 5,
-  },
-  wele: {
-    id: "wele",
-    name: "Wele",
-    price: 5,
-  },
-  kckcc: {
-    id: "kckcc",
-    name: "KCKCC",
-    price: 10,
-  },
-  rice: {
-    id: "rice",
-    name: "Rice",
-    price: 15,
-  },
-  creamySalad: {
-    id: "creamySalad",
-    name: "Creamy Salad",
-    price: 20,
-  },
-  waakyeExtra: {
-    id: "waakyeExtra",
-    name: "Waakye",
-    price: 15,
-  },
-  gob3Extra: {
-    id: "gob3Extra",
-    name: "Gob3",
-    price: 15,
-  },
-  beansStewExtra: {
-    id: "beansStewExtra",
-    name: "Beans Stew",
-    price: 25,
-  },
-};
-
-/* =========================================================
-   PRODUCTS
-========================================================= */
-
-const PRODUCTS = [
-  /* ---------------- GOB3 ---------------- */
-
-  {
-    id: "menkoaa",
-    category: "gob3",
-    name: "Menkoaa Pack",
-    price: 30,
-    includes: ["Beans", "KCKCC", "Egg / Sausage"],
-    extraIds: ["chicken", "fish", "avocado", "sausage", "egg"],
-    popular: false,
-  },
-
-  {
-    id: "boysboys",
-    category: "gob3",
-    name: "Boys Boys Pack",
-    price: 45,
-    includes: ["Beans", "Rice", "KCKCC", "Egg / Sausage"],
-    extraIds: ["chicken", "fish", "avocado", "sausage", "egg"],
-    popular: false,
-  },
-
-  {
-    id: "daavi",
-    category: "gob3",
-    name: "Daavi Pack",
-    price: 55,
-    includes: [
-      "Beans",
-      "Rice",
-      "KCKCC",
-      "Egg / Sausage",
-      "Chicken / Fish",
-    ],
-    extraIds: ["chicken", "fish", "avocado", "sausage"],
-    popular: true,
-  },
-
-  {
-    id: "borga",
-    category: "gob3",
-    name: "Borga Pack",
-    price: 80,
-    includes: [
-      "Beans",
-      "Rice",
-      "KCKCC",
-      "Egg",
-      "Sausage",
-      "Chicken",
-      "Fish",
-      "Drink included",
-    ],
-    extraIds: ["avocado"],
-    popular: false,
-  },
-
-  /* ---------------- WAAKYE ---------------- */
-
-  {
-    id: "naawa",
-    category: "waakye",
-    name: "Naawa Pack",
-    price: 45,
-    includes: [
-      "Waakye",
-      "Wele",
-      "Egg",
-      "KCKCC",
-      "Spag",
-      "Salad",
-    ],
-    extraIds: ["chicken", "fish", "avocado", "egg", "sausage"],
-    popular: false,
-  },
-
-  {
-    id: "amalia",
-    category: "waakye",
-    name: "Amalia Pack",
-    price: 55,
-    includes: [
-      "Waakye",
-      "Meat",
-      "Egg",
-      "Wele",
-      "Sausage",
-      "KCKCC",
-      "Spag",
-      "Salad",
-    ],
-    extraIds: ["chicken", "fish", "avocado"],
-    popular: false,
-  },
-
-  {
-    id: "city",
-    category: "waakye",
-    name: "City Pack",
-    price: 65,
-    includes: [
-      "Waakye",
-      "Meat",
-      "Wele",
-      "Fish",
-      "Egg",
-      "Sausage",
-      "KCKCC",
-      "Spag",
-      "Salad",
-    ],
-    extraIds: ["chicken", "avocado"],
-    popular: true,
-  },
-
-  {
-    id: "echoke",
-    category: "waakye",
-    name: "Echoke Pack",
-    price: 99,
-    includes: [
-      "Waakye",
-      "Meat",
-      "Wele",
-      "Fish",
-      "Egg",
-      "Sausage",
-      "Chicken",
-      "KCKCC",
-      "Spag",
-      "Salad",
-      "Drink included",
-    ],
-    extraIds: ["avocado"],
-    popular: true,
-    note: "Choose creamy or normal salad",
-  },
-
-  /* ---------------- BEANS STEW ---------------- */
-
-  {
-    id: "me",
-    category: "beans-stew",
-    name: "Me Pack",
-    price: 45,
-    includes: ["Beans Stew", "Rice", "Egg", "Sausage"],
-    extraIds: ["chicken", "fish", "avocado", "egg", "sausage"],
-    popular: false,
-  },
-
-  {
-    id: "pal",
-    category: "beans-stew",
-    name: "Pal Pack",
-    price: 60,
-    includes: [
-      "Beans Stew",
-      "Rice",
-      "Egg",
-      "Sausage",
-      "Chicken",
-    ],
-    extraIds: ["fish", "avocado", "sausage"],
-    popular: false,
-  },
-
-  {
-    id: "bigman",
-    category: "beans-stew",
-    name: "Big Man Pack",
-    price: 80,
-    includes: [
-      "Beans Stew",
-      "Rice",
-      "Egg",
-      "Sausage",
-      "Chicken",
-      "Drink included",
-    ],
-    extraIds: ["avocado"],
-    popular: true,
-  },
-];
-
-/* =========================================================
-   EXTRA PRODUCTS
-========================================================= */
-
-const EXTRA_PRODUCTS = [
-  {
-    id: "x-beansStew",
-    name: "Beans Stew",
-    price: 25,
-  },
-  {
-    id: "x-creamySalad",
-    name: "Creamy Salad",
-    price: 20,
-  },
-  {
-    id: "x-waakye",
-    name: "Waakye",
-    price: 15,
-  },
-  {
-    id: "x-gob3",
-    name: "Gob3",
-    price: 15,
-  },
-  {
-    id: "x-rice",
-    name: "Rice",
-    price: 15,
-  },
-  {
-    id: "x-kckcc",
-    name: "KCKCC",
-    price: 10,
-  },
-  {
-    id: "x-chicken",
-    name: "Chicken",
-    price: 10,
-  },
-  {
-    id: "x-fish",
-    name: "Fish",
-    price: 10,
-  },
-  {
-    id: "x-avocado",
-    name: "Avocado",
-    price: 10,
-  },
-  {
-    id: "x-meat",
-    name: "Meat",
-    price: 6,
-  },
-  {
-    id: "x-salad",
-    name: "Salad",
-    price: 5,
-  },
-  {
-    id: "x-sausage",
-    name: "Sausage",
-    price: 5,
-  },
-  {
-    id: "x-egg",
-    name: "Egg",
-    price: 5,
-  },
-  {
-    id: "x-wele",
-    name: "Wele",
-    price: 5,
-  },
-];
-
-/* =========================================================
    BUSINESS INFO
 ========================================================= */
 
@@ -412,10 +70,10 @@ const WHATSAPP_NUMBER = "233552036497";
 
 const FOOD_IMAGES = {
   hero: [
-    "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=2000&q=90",
-    "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=2000&q=90",
-    "https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=2000&q=90",
-    "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=2000&q=90",
+    `${import.meta.env.BASE_URL}images/hero/hero-1.jpg`,
+    `${import.meta.env.BASE_URL}images/hero/hero-2.jpg`,
+    `${import.meta.env.BASE_URL}images/hero/hero-3.jpg`,
+    `${import.meta.env.BASE_URL}images/hero/hero-4.jpg`,
   ],
 
   gob3:
@@ -835,7 +493,7 @@ function Hero({ setPage }) {
 
       {/* Content */}
 
-      <div className="relative z-10 max-w-7xl mx-auto min-h-[650px] md:min-h-[720px] px-5 md:px-8 flex items-center">
+      <div className="relative z-10 max-w-7xl mx-auto min-h-[650px] md:min-h-[720px] px-5 md:px-8 pt-28 md:pt-32 flex items-center">
 
         <div className="max-w-3xl text-white">
 
@@ -972,6 +630,10 @@ function CategoryRail({
 ========================================================= */
 
 function getProductImage(product) {
+  if (product.imageUrl) {
+    return product.imageUrl;
+  }
+
   if (product.category === "gob3") {
     return FOOD_IMAGES.gob3;
   }
@@ -1063,10 +725,11 @@ function ProductCard({
 ========================================================= */
 
 function Home({
+  products,
   setPage,
   openProduct,
 }) {
-  const popular = PRODUCTS.filter(
+  const popular = products.filter(
     (product) => product.popular
   );
 
@@ -1299,6 +962,7 @@ function Home({
 ========================================================= */
 
 function MenuPage({
+  products,
   activeCategory,
   setActiveCategory,
   openProduct,
@@ -1306,10 +970,10 @@ function MenuPage({
 }) {
   const isExtras = activeCategory === "extras";
 
-  const products =
+  const filtered =
     activeCategory === "all"
-      ? PRODUCTS
-      : PRODUCTS.filter(
+      ? products.filter((product) => product.category !== "extras")
+      : products.filter(
           (product) =>
             product.category === activeCategory
         );
@@ -1317,7 +981,7 @@ function MenuPage({
   return (
     <main className="min-h-[70vh] bg-[#F7F1E3]">
 
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-12 md:py-20">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-32 md:pt-40 pb-12 md:pb-20">
 
         <div className="max-w-2xl">
 
@@ -1355,7 +1019,7 @@ function MenuPage({
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
 
-            {products.map((product) => (
+            {filtered.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
@@ -1369,12 +1033,16 @@ function MenuPage({
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-6">
 
-            {EXTRA_PRODUCTS.map((extra) => (
+            {filtered.map((extra) => (
 
               <div
                 key={extra.id}
                 className="bg-white rounded-2xl p-5 border border-black/5"
               >
+
+                <div className="text-3xl mb-2">
+                  {extra.icon}
+                </div>
 
                 <h3 className="font-bold">
                   {extra.name}
@@ -1422,12 +1090,10 @@ function ProductModal({
 
   if (!product) return null;
 
-  const extras = product.extraIds.map(
-    (id) => EXTRAS[id]
-  );
+  const extras = product.extrasList || [];
 
   const extraTotal = selected.reduce(
-    (sum, id) => sum + EXTRAS[id].price,
+    (sum, id) => sum + extras.find((e) => e.id === id).price,
     0
   );
 
@@ -1631,9 +1297,10 @@ function ProductModal({
                 productId: product.id,
                 name: product.name,
                 basePrice: product.price,
+                image: getProductImage(product),
                 qty,
                 extras: selected.map(
-                  (id) => EXTRAS[id]
+                  (id) => extras.find((e) => e.id === id)
                 ),
                 lineTotal: total,
               });
@@ -1725,10 +1392,6 @@ function CartPage({
 
           {cart.map((item) => {
 
-            const product = PRODUCTS.find(
-              (p) => p.id === item.productId
-            );
-
             return (
               <div
                 key={item.cartId}
@@ -1738,11 +1401,7 @@ function CartPage({
                 <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0">
 
                   <img
-                    src={
-                      product
-                        ? getProductImage(product)
-                        : FOOD_IMAGES.stew
-                    }
+                    src={item.image || FOOD_IMAGES.stew}
                     alt={item.name}
                     className="w-full h-full object-cover"
                   />
@@ -2386,6 +2045,8 @@ export default function CityBeansApp() {
   const [cart, setCart] =
     useState([]);
 
+  const { products, loading, error } = useMenuData();
+
   /* Handle category navigation */
 
   useEffect(() => {
@@ -2400,6 +2061,27 @@ export default function CityBeansApp() {
     }
 
   }, [page]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F1E3]">
+        <div className="text-center">
+          <div className="h-10 w-10 mx-auto mb-4 rounded-full border-4 border-[#557A3B] border-t-transparent animate-spin" />
+          <p className="text-sm text-black/50">Loading the menu…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F1E3] px-6 text-center">
+        <p className="text-black/60">
+          Couldn't load the menu right now. Please refresh the page.
+        </p>
+      </div>
+    );
+  }
 
   /* Add product */
 
@@ -2544,6 +2226,7 @@ export default function CityBeansApp() {
 
       {page === "home" && (
         <Home
+          products={products}
           setPage={setPage}
           openProduct={setModalProduct}
         />
@@ -2551,6 +2234,7 @@ export default function CityBeansApp() {
 
       {page === "menu" && (
         <MenuPage
+          products={products}
           activeCategory={activeCategory}
           setActiveCategory={
             setActiveCategory

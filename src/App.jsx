@@ -211,7 +211,7 @@ function Button({
       `}
       style={{
         ...styles[variant],
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Georgia, 'Times New Roman', serif",
       }}
     >
       {children}

@@ -64,6 +64,10 @@ const LOCATION = "Kotei, Sunshine Academy";
 
 const WHATSAPP_NUMBER = "233552036497";
 
+// TODO: replace with City Beans' real handles
+const INSTAGRAM_URL = "https://instagram.com/citybeans._";
+const TIKTOK_URL = "https://tiktok.com/@city.beans";
+
 /* =========================================================
    FOOD IMAGES
 ========================================================= */
@@ -120,6 +124,41 @@ function Logo({ dark = false }) {
     />
   );
 }
+/* =========================================================
+   SOCIAL ICONS
+   Lucide doesn't ship brand logos (dropped them to avoid
+   trademark scope creep), so these are small hand-drawn
+   line icons in the same stroke weight as the rest of the UI.
+========================================================= */
+
+function WhatsAppIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12.04 2c-5.5 0-9.96 4.46-9.96 9.96 0 1.76.46 3.48 1.34 5L2 22l5.2-1.36a9.9 9.9 0 0 0 4.84 1.23h.01c5.5 0 9.96-4.46 9.96-9.96S17.54 2 12.04 2Zm0 18.18h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.09.81.82-3-.2-.31a8.2 8.2 0 0 1-1.26-4.39c0-4.55 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.83 2.42a8.19 8.19 0 0 1 2.41 5.83c0 4.55-3.7 8.24-8.25 8.24Zm4.52-6.17c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.17.24-.64.8-.78.97-.14.16-.29.18-.53.06-.25-.12-1.04-.38-1.99-1.22-.73-.66-1.23-1.46-1.37-1.71-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.16-.25.24-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.4-.42-.56-.43h-.48c-.16 0-.43.06-.66.31-.23.25-.86.84-.86 2.04s.88 2.37 1 2.53c.12.17 1.73 2.65 4.2 3.71.58.25 1.04.4 1.4.51.59.19 1.12.16 1.54.1.47-.07 1.47-.6 1.68-1.18.2-.58.2-1.08.14-1.18-.06-.1-.22-.16-.47-.28Z" />
+    </svg>
+  );
+}
+
+function InstagramIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function TikTokIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M16.6 2h-3.1v13.4a2.6 2.6 0 1 1-2.2-2.57v-3.15a5.75 5.75 0 1 0 5.3 5.73V8.9a7.7 7.7 0 0 0 4.4 1.38V7.2a4.6 4.6 0 0 1-4.4-4.3V2Z" />
+    </svg>
+  );
+}
+
+
+
 /* =========================================================
    BUTTON
 ========================================================= */
@@ -524,7 +563,7 @@ function Hero({ setPage }) {
           </h1>
 
           <p className="mt-7 max-w-xl text-base md:text-lg leading-7 text-white/75">
-            Freshly prepared Gob3, Waakye and Beans Stew —
+            Freshly prepared Gob3, Waakye and Beans Stew ,
             customized your way and delivered to your door.
           </p>
 
@@ -1967,9 +2006,27 @@ function Footer() {
               aria-label="Chat with City Beans on WhatsApp"
               className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition"
             >
-              <span className="text-sm font-bold">
-                WA
-              </span>
+              <WhatsAppIcon size={18} />
+            </a>
+
+            <a
+              href={INSTAGRAM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="City Beans on Instagram"
+              className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition"
+            >
+              <InstagramIcon size={18} />
+            </a>
+
+            <a
+              href={TIKTOK_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="City Beans on TikTok"
+              className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition"
+            >
+              <TikTokIcon size={18} />
             </a>
 
           </div>

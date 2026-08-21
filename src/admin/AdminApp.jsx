@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { useAdminOrders } from "../hooks/useAdminOrders";
 import { useAdminRiders } from "../hooks/useAdminRiders";
+import { useAdminProducts } from "../hooks/useAdminProducts";
+import { useAdminDelivery } from "../hooks/useAdminDelivery";
 import {
   LayoutGrid, Package, ClipboardList, Bike, Settings2, Search, Bell,
   Plus, Pencil, Trash2, X, ImagePlus, ChevronDown, Phone, MapPin,
@@ -40,52 +42,13 @@ const T = {
 const GHS = (n) => `GH₵${Number(n).toFixed(2).replace(/\.00$/, "")}`;
 
 /* ============================================================
-   MOCK DATA — shaped like the future Postgres tables
+   CONSTANTS — real DB values (category slugs, status enum)
    ============================================================ */
 const CATEGORY_OPTIONS = ["gob3", "waakye", "beans-stew", "extras"];
-
-const EXTRAS_MASTER = [
-  { id: "chicken", name: "Chicken", price: 10 },
-  { id: "fish", name: "Fish", price: 10 },
-  { id: "egg", name: "Egg", price: 5 },
-  { id: "sausage", name: "Sausage", price: 5 },
-  { id: "avocado", name: "Avocado", price: 10 },
-  { id: "meat", name: "Meat", price: 6 },
-  { id: "salad", name: "Salad", price: 5 },
-  { id: "wele", name: "Wele", price: 5 },
-  { id: "kckcc", name: "KCKCC", price: 10 },
-  { id: "rice", name: "Rice", price: 15 },
-];
-
-const INITIAL_PRODUCTS = [
-  { id: "menkoaa", name: "Menkoaa Pack", category: "gob3", price: 30, available: true, extraIds: ["chicken", "fish", "avocado", "sausage", "egg"] },
-  { id: "boysboys", name: "Boys Boys Pack", category: "gob3", price: 45, available: true, extraIds: ["chicken", "fish", "avocado", "sausage", "egg"] },
-  { id: "daavi", name: "Daavi Pack", category: "gob3", price: 55, available: true, extraIds: ["chicken", "fish", "avocado", "sausage"] },
-  { id: "borga", name: "Borga Pack", category: "gob3", price: 80, available: true, extraIds: ["avocado"] },
-  { id: "naawa", name: "Naawa Pack", category: "waakye", price: 45, available: true, extraIds: ["chicken", "fish", "avocado", "egg", "sausage"] },
-  { id: "amalia", name: "Amalia Pack", category: "waakye", price: 55, available: true, extraIds: ["chicken", "fish", "avocado"] },
-  { id: "city", name: "City Pack", category: "waakye", price: 65, available: true, extraIds: ["chicken", "avocado"] },
-  { id: "echoke", name: "Echoke Pack", category: "waakye", price: 99, available: false, extraIds: ["avocado"] },
-  { id: "me", name: "Me Pack", category: "beans-stew", price: 45, available: true, extraIds: ["chicken", "fish", "avocado", "egg", "sausage"] },
-  { id: "pal", name: "Pal Pack", category: "beans-stew", price: 60, available: true, extraIds: ["fish", "avocado", "sausage"] },
-  { id: "bigman", name: "Big Man Pack", category: "beans-stew", price: 80, available: true, extraIds: ["avocado"] },
-];
 
 const DELIVERY_STATUSES = [
   "PENDING", "CONFIRMED", "PREPARING", "READY_FOR_PICKUP", "RIDER_ASSIGNED",
   "PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED",
-];
-
-const INITIAL_RIDERS = [
-  { id: "r1", name: "Kwabena Owusu", phone: "024 112 3344", active: true },
-  { id: "r2", name: "Yaw Mensah", phone: "020 556 7788", active: true },
-  { id: "r3", name: "Abena Darko", phone: "055 998 2211", active: false },
-];
-
-const INITIAL_ZONES = [
-  { id: "z1", name: "Kotei (core)", fee: 10, active: true },
-  { id: "z2", name: "Ayeduase", fee: 15, active: true },
-  { id: "z3", name: "Bomso", fee: 20, active: false },
 ];
 
 /* ============================================================
@@ -355,7 +318,7 @@ function DashboardPage({ orders, riders }) {
 /* ============================================================
    PRODUCTS PAGE
    ============================================================ */
-function ProductModal({ open, onClose, product, onSave }) {
+function ProductModal({ open, onClose, product, extrasMaster, onSave }) {
   const [form, setForm] = useState(product || { name: "", category: "gob3", price: "", available: true, extraIds: [] });
   React.useEffect(() => setForm(product || { name: "", category: "gob3", price: "", available: true, extraIds: [] }), [product, open]);
 
@@ -383,7 +346,7 @@ function ProductModal({ open, onClose, product, onSave }) {
         </div>
         <FormField label="Available extras">
           <div className="grid grid-cols-2 gap-2">
-            {EXTRAS_MASTER.map((x) => (
+            {extrasMaster.map((x) => (
               <label key={x.id} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm" style={{ background: form.extraIds.includes(x.id) ? T.greenSoft : T.paper, border: `1.5px solid rgba(90,70,48,0.12)`, color: T.ink }}>
                 <input type="checkbox" checked={form.extraIds.includes(x.id)} onChange={() => toggleExtra(x.id)} />
                 {x.name}
@@ -392,7 +355,7 @@ function ProductModal({ open, onClose, product, onSave }) {
           </div>
         </FormField>
         <Toggle on={form.available} onChange={(v) => setForm({ ...form, available: v })} label={form.available ? "Available on menu" : "Marked unavailable"} />
-        <Button variant="primary" onClick={() => onSave({ ...form, id: form.id || form.name.toLowerCase().replace(/\s+/g, "-"), price: Number(form.price) || 0 })}>
+        <Button variant="primary" onClick={() => onSave({ ...form, price: Number(form.price) || 0 })}>
           {product ? "Save changes" : "Add product"}
         </Button>
       </div>
@@ -400,22 +363,22 @@ function ProductModal({ open, onClose, product, onSave }) {
   );
 }
 
-function ProductsPage({ products, setProducts }) {
+function ProductsPage({ products, extrasMaster, addProduct, updateProduct, deleteProduct, toggleAvailable }) {
   const [editing, setEditing] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [filter, setFilter] = useState("all");
 
   const openNew = () => { setEditing(null); setModalOpen(true); };
   const openEdit = (p) => { setEditing(p); setModalOpen(true); };
-  const remove = (id) => setProducts((ps) => ps.filter((p) => p.id !== id));
-  const save = (p) => {
-    setProducts((ps) => {
-      const exists = ps.some((x) => x.id === p.id);
-      return exists ? ps.map((x) => (x.id === p.id ? p : x)) : [...ps, p];
-    });
+
+  const save = (formData) => {
+    if (editing) {
+      updateProduct(editing.id, formData);
+    } else {
+      addProduct(formData);
+    }
     setModalOpen(false);
   };
-  const toggleAvailable = (id) => setProducts((ps) => ps.map((p) => (p.id === id ? { ...p, available: !p.available } : p)));
 
   const filtered = filter === "all" ? products : products.filter((p) => p.category === filter);
 
@@ -461,7 +424,7 @@ function ProductsPage({ products, setProducts }) {
                   <td className="p-4">
                     <div className="flex items-center justify-end gap-2">
                       <button onClick={() => openEdit(p)} className="p-2 rounded-lg" style={{ background: T.paper }}><Pencil size={14} color={T.ink} /></button>
-                      <button onClick={() => remove(p.id)} className="p-2 rounded-lg" style={{ background: T.redSoft }}><Trash2 size={14} color={T.red} /></button>
+                      <button onClick={() => deleteProduct(p.id)} className="p-2 rounded-lg" style={{ background: T.redSoft }}><Trash2 size={14} color={T.red} /></button>
                     </div>
                   </td>
                 </tr>
@@ -471,7 +434,7 @@ function ProductsPage({ products, setProducts }) {
         </div>
       </Card>
 
-      <ProductModal open={modalOpen} onClose={() => setModalOpen(false)} product={editing} onSave={save} />
+      <ProductModal open={modalOpen} onClose={() => setModalOpen(false)} product={editing} extrasMaster={extrasMaster} onSave={save} />
     </div>
   );
 }
@@ -600,15 +563,14 @@ function RiderModal({ open, onClose, onSave }) {
         <FormField label="Phone number">
           <input className="rounded-xl px-3 py-2.5 text-sm outline-none" style={inputStyle} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="024 XXX XXXX" />
         </FormField>
-        <Button onClick={() => { onSave({ id: `r${Date.now()}`, ...form, active: true }); onClose(); }} disabled={!form.name.trim() || !form.phone.trim()}>Add rider</Button>
+        <Button onClick={() => { onSave(form); onClose(); }} disabled={!form.name.trim() || !form.phone.trim()}>Add rider</Button>
       </div>
     </Modal>
   );
 }
 
-function RidersPage({ riders, setRiders, orders }) {
+function RidersPage({ riders, addRider, toggleActive, orders }) {
   const [modalOpen, setModalOpen] = useState(false);
-  const toggleActive = (id) => setRiders((rs) => rs.map((r) => (r.id === id ? { ...r, active: !r.active } : r)));
   const deliveriesFor = (id) => orders.filter((o) => o.riderId === id && !["DELIVERED", "CANCELLED"].includes(o.status)).length;
 
   return (
@@ -634,7 +596,7 @@ function RidersPage({ riders, setRiders, orders }) {
           </Card>
         ))}
       </div>
-      <RiderModal open={modalOpen} onClose={() => setModalOpen(false)} onSave={(r) => setRiders((rs) => [...rs, r])} />
+      <RiderModal open={modalOpen} onClose={() => setModalOpen(false)} onSave={addRider} />
     </div>
   );
 }
@@ -642,17 +604,21 @@ function RidersPage({ riders, setRiders, orders }) {
 /* ============================================================
    DELIVERY CONFIG PAGE
    ============================================================ */
-function DeliveryPage({ zones, setZones, settings, setSettings }) {
+function DeliveryPage({ zones, addZone, removeZone, updateZoneFee, toggleZone, settings, updateSettings }) {
   const [newZone, setNewZone] = useState({ name: "", fee: "" });
+  const [feeEdits, setFeeEdits] = useState({}); // { [zoneId]: "12" } — local until blur
 
-  const addZone = () => {
+  const handleAddZone = () => {
     if (!newZone.name.trim()) return;
-    setZones((zs) => [...zs, { id: `z${Date.now()}`, name: newZone.name, fee: Number(newZone.fee) || 0, active: true }]);
+    addZone(newZone.name, Number(newZone.fee) || 0);
     setNewZone({ name: "", fee: "" });
   };
-  const removeZone = (id) => setZones((zs) => zs.filter((z) => z.id !== id));
-  const updateZoneFee = (id, fee) => setZones((zs) => zs.map((z) => (z.id === id ? { ...z, fee: Number(fee) || 0 } : z)));
-  const toggleZone = (id) => setZones((zs) => zs.map((z) => (z.id === id ? { ...z, active: !z.active } : z)));
+
+  const commitFee = (id) => {
+    if (feeEdits[id] === undefined) return;
+    updateZoneFee(id, Number(feeEdits[id]) || 0);
+    setFeeEdits((f) => { const next = { ...f }; delete next[id]; return next; });
+  };
 
   return (
     <div className="p-5 md:p-8 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
@@ -665,7 +631,14 @@ function DeliveryPage({ zones, setZones, settings, setSettings }) {
             <div key={z.id} className="flex items-center gap-3 rounded-xl p-3" style={{ background: T.paper }}>
               <span className="flex-1 font-semibold text-sm" style={{ color: T.ink }}>{z.name}</span>
               <span className="text-xs opacity-60" style={{ color: T.ink }}>GH₵</span>
-              <input type="number" value={z.fee} onChange={(e) => updateZoneFee(z.id, e.target.value)} className="w-20 rounded-lg px-2 py-1.5 text-sm outline-none" style={inputStyle} />
+              <input
+                type="number"
+                value={feeEdits[z.id] !== undefined ? feeEdits[z.id] : z.fee}
+                onChange={(e) => setFeeEdits((f) => ({ ...f, [z.id]: e.target.value }))}
+                onBlur={() => commitFee(z.id)}
+                className="w-20 rounded-lg px-2 py-1.5 text-sm outline-none"
+                style={inputStyle}
+              />
               <Toggle on={z.active} onChange={() => toggleZone(z.id)} />
               <button onClick={() => removeZone(z.id)} className="p-1.5 rounded-lg" style={{ background: T.redSoft }}><Trash2 size={13} color={T.red} /></button>
             </div>
@@ -675,7 +648,7 @@ function DeliveryPage({ zones, setZones, settings, setSettings }) {
         <div className="flex gap-2">
           <input placeholder="New zone name" value={newZone.name} onChange={(e) => setNewZone({ ...newZone, name: e.target.value })} className="flex-1 rounded-xl px-3 py-2.5 text-sm outline-none" style={inputStyle} />
           <input placeholder="Fee" type="number" value={newZone.fee} onChange={(e) => setNewZone({ ...newZone, fee: e.target.value })} className="w-24 rounded-xl px-3 py-2.5 text-sm outline-none" style={inputStyle} />
-          <Button icon={Plus} onClick={addZone}>Add</Button>
+          <Button icon={Plus} onClick={handleAddZone}>Add</Button>
         </div>
       </Card>
 
@@ -684,17 +657,23 @@ function DeliveryPage({ zones, setZones, settings, setSettings }) {
         <div className="flex flex-col gap-5">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold" style={{ color: T.ink }}>Pickup available</span>
-            <Toggle on={settings.pickupEnabled} onChange={(v) => setSettings({ ...settings, pickupEnabled: v })} />
+            <Toggle on={settings.pickupEnabled} onChange={(v) => updateSettings({ pickupEnabled: v })} />
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold" style={{ color: T.ink }}>Delivery available</span>
-            <Toggle on={settings.deliveryEnabled} onChange={(v) => setSettings({ ...settings, deliveryEnabled: v })} />
+            <Toggle on={settings.deliveryEnabled} onChange={(v) => updateSettings({ deliveryEnabled: v })} />
           </div>
           <FormField label="Minimum order amount (GH₵, 0 = none)">
-            <input type="number" value={settings.minOrder} onChange={(e) => setSettings({ ...settings, minOrder: Number(e.target.value) || 0 })} className="rounded-xl px-3 py-2.5 text-sm outline-none" style={inputStyle} />
+            <input
+              type="number"
+              defaultValue={settings.minOrder}
+              onBlur={(e) => updateSettings({ minOrder: Number(e.target.value) || 0 })}
+              className="rounded-xl px-3 py-2.5 text-sm outline-none"
+              style={inputStyle}
+            />
           </FormField>
           <p className="text-xs opacity-50" style={{ color: T.ink }}>
-            These map directly to server-side config once the backend lands — nothing here is a hard-coded business rule in the app.
+            These are read live by checkout's create_order function — changing them here takes effect on the next order placed, no deploy needed.
           </p>
         </div>
       </Card>
@@ -708,12 +687,20 @@ function DeliveryPage({ zones, setZones, settings, setSettings }) {
 export default function CityBeansAdmin() {
   const [page, setPage] = useState("dashboard");
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [products, setProducts] = useState(INITIAL_PRODUCTS);
+
+  const {
+    products, extrasMaster, loading: productsLoading,
+    addProduct, updateProduct, deleteProduct, toggleAvailable,
+  } = useAdminProducts();
+
   const { orders, loading: ordersLoading, changeStatus, assignRider } = useAdminOrders();
-  const { riders: realRiders } = useAdminRiders();
-  const [riders, setRiders] = useState(INITIAL_RIDERS); // still mock — Riders page CRUD is the next pass
-  const [zones, setZones] = useState(INITIAL_ZONES);
-  const [settings, setSettings] = useState({ pickupEnabled: true, deliveryEnabled: true, minOrder: 0 });
+
+  const { riders, loading: ridersLoading, addRider, toggleActive } = useAdminRiders();
+
+  const {
+    zones, settings, loading: deliveryLoading,
+    addZone, removeZone, updateZoneFee, toggleZone, updateSettings,
+  } = useAdminDelivery();
 
   const titles = { dashboard: "Dashboard", products: "Products", orders: "Orders", riders: "Riders", delivery: "Delivery settings" };
 
@@ -723,15 +710,32 @@ export default function CityBeansAdmin() {
       <Sidebar page={page} setPage={setPage} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
       <div className="flex-1 min-w-0">
         <Topbar title={titles[page]} setMobileOpen={setMobileOpen} />
-        {page === "dashboard" && <DashboardPage orders={orders} riders={realRiders} />}
-        {page === "products" && <ProductsPage products={products} setProducts={setProducts} />}
+
+        {page === "dashboard" && <DashboardPage orders={orders} riders={riders} />}
+
+        {page === "products" && (
+          productsLoading
+            ? <div className="p-8 text-sm opacity-60" style={{ color: T.ink }}>Loading products…</div>
+            : <ProductsPage products={products} extrasMaster={extrasMaster} addProduct={addProduct} updateProduct={updateProduct} deleteProduct={deleteProduct} toggleAvailable={toggleAvailable} />
+        )}
+
         {page === "orders" && (
           ordersLoading
             ? <div className="p-8 text-sm opacity-60" style={{ color: T.ink }}>Loading orders…</div>
-            : <OrdersPage orders={orders} riders={realRiders} changeStatus={changeStatus} assignRider={assignRider} />
+            : <OrdersPage orders={orders} riders={riders} changeStatus={changeStatus} assignRider={assignRider} />
         )}
-        {page === "riders" && <RidersPage riders={riders} setRiders={setRiders} orders={orders} />}
-        {page === "delivery" && <DeliveryPage zones={zones} setZones={setZones} settings={settings} setSettings={setSettings} />}
+
+        {page === "riders" && (
+          ridersLoading
+            ? <div className="p-8 text-sm opacity-60" style={{ color: T.ink }}>Loading riders…</div>
+            : <RidersPage riders={riders} addRider={addRider} toggleActive={toggleActive} orders={orders} />
+        )}
+
+        {page === "delivery" && (
+          deliveryLoading
+            ? <div className="p-8 text-sm opacity-60" style={{ color: T.ink }}>Loading delivery settings…</div>
+            : <DeliveryPage zones={zones} addZone={addZone} removeZone={removeZone} updateZoneFee={updateZoneFee} toggleZone={toggleZone} settings={settings} updateSettings={updateSettings} />
+        )}
       </div>
     </div>
   );

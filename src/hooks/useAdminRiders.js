@@ -1,28 +1,46 @@
 // src/hooks/useAdminRiders.js
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
 export function useAdminRiders() {
   const [riders, setRiders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    supabase
+  const load = useCallback(async () => {
+    const { data, error } = await supabase
       .from("riders")
       .select("id, name, phone, active")
-      .order("name")
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        if (!error && data) setRiders(data);
-        setLoading(false);
-      });
+      .order("name");
 
-    return () => {
-      cancelled = true;
-    };
+    if (!error && data) setRiders(data);
+    setLoading(false);
   }, []);
 
-  return { riders, loading };
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const addRider = useCallback(
+    async (form) => {
+      const { error } = await supabase
+        .from("riders")
+        .insert({ name: form.name, phone: form.phone, active: true });
+      if (!error) load();
+    },
+    [load]
+  );
+
+  const toggleActive = useCallback(
+    async (id) => {
+      const current = riders.find((r) => r.id === id);
+      if (!current) return;
+      const next = !current.active;
+      setRiders((rs) => rs.map((r) => (r.id === id ? { ...r, active: next } : r))); // optimistic
+      const { error } = await supabase.from("riders").update({ active: next }).eq("id", id);
+      if (error) load();
+    },
+    [riders, load]
+  );
+
+  return { riders, loading, addRider, toggleActive, refetch: load };
 }

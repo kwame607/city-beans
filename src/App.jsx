@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import cityBeansLogoCream from "./assets/cream.png";
 import cityBeansLogoDark from "./assets/dark.png";
 import { useMenuData } from "./hooks/useMenuData";
+import { useDeliveryZones } from "./hooks/useDeliveryZones";
+import { useCreateOrder } from "./hooks/useCreateOrder";
 import {
   ArrowRight,
   ChevronLeft,
@@ -1646,16 +1648,20 @@ function CheckoutPage({
     instructions: "",
   });
 
-  const [placed, setPlaced] =
-    useState(false);
+  const [zoneId, setZoneId] = useState("");
+  const { zones, loading: zonesLoading } = useDeliveryZones();
+  const { createOrder, submitting, error: orderError } = useCreateOrder();
+
+  const [placedOrder, setPlacedOrder] = useState(null);
 
   const subtotal = cart.reduce(
     (sum, item) => sum + item.lineTotal,
     0
   );
 
+  const selectedZone = zones.find((z) => z.id === zoneId);
   const delivery =
-    method === "delivery" ? 10 : 0;
+    method === "delivery" ? (selectedZone?.fee ?? 0) : 0;
 
   const total = subtotal + delivery;
 
@@ -1673,11 +1679,20 @@ function CheckoutPage({
       method === "pickup" ||
       (
         form.city.trim() &&
-        form.area.trim()
+        form.area.trim() &&
+        zoneId
       )
     );
 
-  if (placed) {
+  const handlePlaceOrder = async () => {
+    const result = await createOrder({ cart, method, zoneId, form });
+    if (result) {
+      setPlacedOrder(result);
+      onClear();
+    }
+  };
+
+  if (placedOrder) {
 
     return (
       <div className="max-w-xl mx-auto text-center py-28 px-5">
@@ -1706,15 +1721,14 @@ function CheckoutPage({
         </h1>
 
         <p className="mt-3 text-black/55">
-          Your order has been placed. In production,
-          this step will verify the Paystack payment
-          before sending the order to the kitchen.
+          Order {placedOrder.order_number} — total {money(placedOrder.total)}.
+          Real payment (Paystack) isn't wired up yet, so this order is
+          saved as PENDING until that's connected.
         </p>
 
         <Button
           className="mt-7"
           onClick={() => {
-            onClear();
             setPage("home");
           }}
         >
@@ -1840,6 +1854,27 @@ function CheckoutPage({
 
               <div className="grid sm:grid-cols-2 gap-3 mt-5">
 
+                <label className="block sm:col-span-2">
+                  <span className="text-xs font-bold text-black/55">
+                    Delivery zone
+                  </span>
+                  <select
+                    value={zoneId}
+                    onChange={(e) => setZoneId(e.target.value)}
+                    disabled={zonesLoading}
+                    className="mt-1.5 w-full rounded-xl bg-white border border-black/10 px-4 py-3.5 outline-none focus:ring-2 focus:ring-[#557A3B]/25"
+                  >
+                    <option value="">
+                      {zonesLoading ? "Loading zones…" : "Select your zone"}
+                    </option>
+                    {zones.map((z) => (
+                      <option key={z.id} value={z.id}>
+                        {z.name} — {money(z.fee)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
                 <Input
                   label="Region"
                   value={form.region}
@@ -1941,7 +1976,9 @@ function CheckoutPage({
             <span>Delivery</span>
 
             <span>
-              {money(delivery)}
+              {method === "delivery" && !zoneId
+                ? "Select a zone"
+                : money(delivery)}
             </span>
 
           </div>
@@ -1956,18 +1993,25 @@ function CheckoutPage({
 
           </div>
 
+          {orderError && (
+            <p className="text-sm mt-4" style={{ color: "#C24A3D" }}>
+              {orderError}
+            </p>
+          )}
+
           <Button
-            disabled={!can}
+            disabled={!can || submitting}
             className="w-full mt-6"
             variant="orange"
-            onClick={() => setPlaced(true)}
+            onClick={handlePlaceOrder}
           >
-            PAY {money(total)} WITH PAYSTACK
+            {submitting ? "PLACING ORDER…" : `PLACE ORDER — ${money(total)}`}
           </Button>
 
           <p className="text-[10px] text-black/40 text-center mt-3">
-            Final prices and payment verification
-            should be handled server-side in production.
+            Payment isn't automated yet — Paystack integration is the
+            next step. For now, orders are recorded as PENDING and
+            payment is collected on delivery/pickup.
           </p>
 
         </aside>

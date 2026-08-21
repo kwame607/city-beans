@@ -1,4 +1,6 @@
 import React, { useState, useMemo, useCallback } from "react";
+import { useAdminOrders } from "../hooks/useAdminOrders";
+import { useAdminRiders } from "../hooks/useAdminRiders";
 import {
   LayoutGrid, Package, ClipboardList, Bike, Settings2, Search, Bell,
   Plus, Pencil, Trash2, X, ImagePlus, ChevronDown, Phone, MapPin,
@@ -78,16 +80,6 @@ const INITIAL_RIDERS = [
   { id: "r1", name: "Kwabena Owusu", phone: "024 112 3344", active: true },
   { id: "r2", name: "Yaw Mensah", phone: "020 556 7788", active: true },
   { id: "r3", name: "Abena Darko", phone: "055 998 2211", active: false },
-];
-
-const INITIAL_ORDERS = [
-  { id: "CB-1049", customer: "Ama Mensah", phone: "024 555 1122", method: "delivery", area: "Kotei", items: "2 × Daavi Pack, 1 × Egg", total: 115, paymentStatus: "PAID", status: "OUT_FOR_DELIVERY", riderId: "r1", placedAt: "10 min ago" },
-  { id: "CB-1048", customer: "Kojo Antwi", phone: "055 221 9090", method: "pickup", area: "—", items: "1 × Big Man Pack", total: 80, paymentStatus: "PAID", status: "PREPARING", riderId: null, placedAt: "18 min ago" },
-  { id: "CB-1047", customer: "Efua Asante", phone: "020 331 4455", method: "delivery", area: "Ayeduase", items: "1 × Echoke Pack, 1 × Fish", total: 109, paymentStatus: "PAID", status: "RIDER_ASSIGNED", riderId: "r2", placedAt: "25 min ago" },
-  { id: "CB-1046", customer: "Nana Yeboah", phone: "024 887 1010", method: "delivery", area: "Kotei", items: "3 × Menkoaa Pack", total: 100, paymentStatus: "PENDING", status: "PENDING", riderId: null, placedAt: "31 min ago" },
-  { id: "CB-1045", customer: "Adjoa Boateng", phone: "053 442 7766", method: "pickup", area: "—", items: "1 × City Pack", total: 65, paymentStatus: "PAID", status: "READY_FOR_PICKUP", riderId: null, placedAt: "40 min ago" },
-  { id: "CB-1044", customer: "Kwesi Appiah", phone: "020 991 3322", method: "delivery", area: "Kotei", items: "2 × Me Pack", total: 100, paymentStatus: "PAID", status: "DELIVERED", riderId: "r1", placedAt: "1 hr ago" },
-  { id: "CB-1043", customer: "Akosua Frimpong", phone: "024 330 5510", method: "delivery", area: "Ayeduase", items: "1 × Amalia Pack", total: 65, paymentStatus: "FAILED", status: "CANCELLED", riderId: null, placedAt: "2 hr ago" },
 ];
 
 const INITIAL_ZONES = [
@@ -344,7 +336,7 @@ function DashboardPage({ orders, riders }) {
             <tbody>
               {orders.slice(0, 6).map((o) => (
                 <tr key={o.id} style={{ borderTop: `1px solid rgba(90,70,48,0.08)` }}>
-                  <td className="py-3 pr-4 font-bold" style={{ color: T.ink }}>{o.id}</td>
+                  <td className="py-3 pr-4 font-bold" style={{ color: T.ink }}>{o.orderNumber}</td>
                   <td className="py-3 pr-4" style={{ color: T.ink }}>{o.customer}</td>
                   <td className="py-3 pr-4 opacity-70 max-w-[220px] truncate" style={{ color: T.ink }}>{o.items}</td>
                   <td className="py-3 pr-4 font-bold" style={{ color: T.brownDeep }}>{GHS(o.total)}</td>
@@ -490,7 +482,7 @@ function ProductsPage({ products, setProducts }) {
 function OrderDrawer({ order, onClose, riders, onChangeStatus, onAssignRider }) {
   if (!order) return null;
   return (
-    <Modal open={!!order} onClose={onClose} title={order.id} wide>
+    <Modal open={!!order} onClose={onClose} title={order.orderNumber} wide>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
           <div className="text-xs font-bold uppercase opacity-50 mb-1" style={{ color: T.ink }}>Customer</div>
@@ -534,18 +526,11 @@ function OrderDrawer({ order, onClose, riders, onChangeStatus, onAssignRider }) 
   );
 }
 
-function OrdersPage({ orders, setOrders, riders }) {
-  const [active, setActive] = useState(null);
+function OrdersPage({ orders, riders, changeStatus, assignRider }) {
+  const [activeId, setActiveId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const changeStatus = (id, status) => {
-    setOrders((os) => os.map((o) => (o.id === id ? { ...o, status } : o)));
-    setActive((a) => (a && a.id === id ? { ...a, status } : a));
-  };
-  const assignRider = (id, riderId) => {
-    setOrders((os) => os.map((o) => (o.id === id ? { ...o, riderId, status: riderId ? "RIDER_ASSIGNED" : o.status } : o)));
-    setActive((a) => (a && a.id === id ? { ...a, riderId } : a));
-  };
+  const activeOrder = orders.find((o) => o.id === activeId) || null;
 
   const filtered = statusFilter === "all" ? orders : orders.filter((o) => o.status === statusFilter);
 
@@ -578,7 +563,7 @@ function OrdersPage({ orders, setOrders, riders }) {
             <tbody>
               {filtered.map((o) => (
                 <tr key={o.id} style={{ borderTop: `1px solid rgba(90,70,48,0.08)` }}>
-                  <td className="p-4 font-bold" style={{ color: T.ink }}>{o.id}</td>
+                  <td className="p-4 font-bold" style={{ color: T.ink }}>{o.orderNumber}</td>
                   <td className="p-4" style={{ color: T.ink }}>{o.customer}</td>
                   <td className="p-4 opacity-70 capitalize" style={{ color: T.ink }}>{o.method}</td>
                   <td className="p-4 font-bold" style={{ color: T.brownDeep }}>{GHS(o.total)}</td>
@@ -586,7 +571,7 @@ function OrdersPage({ orders, setOrders, riders }) {
                   <td className="p-4"><StatusBadge status={o.status} /></td>
                   <td className="p-4 opacity-50 text-xs" style={{ color: T.ink }}>{o.placedAt}</td>
                   <td className="p-4 text-right">
-                    <button onClick={() => setActive(o)} className="p-2 rounded-lg" style={{ background: T.paper }}><Eye size={14} color={T.ink} /></button>
+                    <button onClick={() => setActiveId(o.id)} className="p-2 rounded-lg" style={{ background: T.paper }}><Eye size={14} color={T.ink} /></button>
                   </td>
                 </tr>
               ))}
@@ -595,7 +580,7 @@ function OrdersPage({ orders, setOrders, riders }) {
         </div>
       </Card>
 
-      <OrderDrawer order={active} onClose={() => setActive(null)} riders={riders} onChangeStatus={changeStatus} onAssignRider={assignRider} />
+      <OrderDrawer order={activeOrder} onClose={() => setActiveId(null)} riders={riders} onChangeStatus={changeStatus} onAssignRider={assignRider} />
     </div>
   );
 }
@@ -724,8 +709,9 @@ export default function CityBeansAdmin() {
   const [page, setPage] = useState("dashboard");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [products, setProducts] = useState(INITIAL_PRODUCTS);
-  const [orders, setOrders] = useState(INITIAL_ORDERS);
-  const [riders, setRiders] = useState(INITIAL_RIDERS);
+  const { orders, loading: ordersLoading, changeStatus, assignRider } = useAdminOrders();
+  const { riders: realRiders } = useAdminRiders();
+  const [riders, setRiders] = useState(INITIAL_RIDERS); // still mock — Riders page CRUD is the next pass
   const [zones, setZones] = useState(INITIAL_ZONES);
   const [settings, setSettings] = useState({ pickupEnabled: true, deliveryEnabled: true, minOrder: 0 });
 
@@ -737,9 +723,13 @@ export default function CityBeansAdmin() {
       <Sidebar page={page} setPage={setPage} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
       <div className="flex-1 min-w-0">
         <Topbar title={titles[page]} setMobileOpen={setMobileOpen} />
-        {page === "dashboard" && <DashboardPage orders={orders} riders={riders} />}
+        {page === "dashboard" && <DashboardPage orders={orders} riders={realRiders} />}
         {page === "products" && <ProductsPage products={products} setProducts={setProducts} />}
-        {page === "orders" && <OrdersPage orders={orders} setOrders={setOrders} riders={riders} />}
+        {page === "orders" && (
+          ordersLoading
+            ? <div className="p-8 text-sm opacity-60" style={{ color: T.ink }}>Loading orders…</div>
+            : <OrdersPage orders={orders} riders={realRiders} changeStatus={changeStatus} assignRider={assignRider} />
+        )}
         {page === "riders" && <RidersPage riders={riders} setRiders={setRiders} orders={orders} />}
         {page === "delivery" && <DeliveryPage zones={zones} setZones={setZones} settings={settings} setSettings={setSettings} />}
       </div>

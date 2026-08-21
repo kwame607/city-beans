@@ -7,7 +7,6 @@ export default defineConfig(({ command }) => ({
     react(),
     tailwindcss(),
   ],
-  // 'serve' = npm run dev (local) → lives at the root, so /admin etc. work as-is
-  // 'build' = npm run build (GitHub Pages) → lives under /city-beans/
-  base: command === 'build' ? '/city-beans/' : '/',
+
+  base: command === 'serve' ? '/' : '/city-beans/',
 }))

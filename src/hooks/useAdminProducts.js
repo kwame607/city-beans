@@ -13,7 +13,7 @@ export function useAdminProducts() {
       supabase
         .from("products")
         .select(`
-          id, name, price, available, category_id,
+          id, name, price, available, category_id, image_url,
           category:categories ( slug ),
           product_extras ( extra_id )
         `)
@@ -34,6 +34,7 @@ export function useAdminProducts() {
           price: Number(p.price),
           available: p.available,
           category: p.category?.slug || "",
+          imageUrl: p.image_url || null,
           extraIds: (p.product_extras || []).map((pe) => pe.extra_id),
         }))
       );
@@ -68,6 +69,7 @@ export function useAdminProducts() {
           price: form.price,
           available: form.available,
           category_id: categoryIdForSlug(form.category),
+          image_url: form.imageUrl || null,
         })
         .select("id")
         .single();
@@ -88,6 +90,7 @@ export function useAdminProducts() {
           price: form.price,
           available: form.available,
           category_id: categoryIdForSlug(form.category),
+          image_url: form.imageUrl || null,
         })
         .eq("id", id);
 
@@ -118,6 +121,22 @@ export function useAdminProducts() {
     [products, load]
   );
 
+  const uploadProductImage = useCallback(async (file) => {
+    const cleanName = file.name.replace(/[^a-zA-Z0-9.\-]/g, "-").toLowerCase();
+    const path = `${Date.now()}-${cleanName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("product-images")
+      .upload(path, file, { cacheControl: "3600", upsert: false });
+
+    if (uploadError) {
+      return { url: null, error: uploadError };
+    }
+
+    const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+    return { url: data.publicUrl, error: null };
+  }, []);
+
   return {
     products,
     categories,
@@ -127,5 +146,6 @@ export function useAdminProducts() {
     updateProduct,
     deleteProduct,
     toggleAvailable,
+    uploadProductImage,
   };
 }

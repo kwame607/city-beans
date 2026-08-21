@@ -318,19 +318,97 @@ function DashboardPage({ orders, riders }) {
 /* ============================================================
    PRODUCTS PAGE
    ============================================================ */
-function ProductModal({ open, onClose, product, extrasMaster, onSave }) {
-  const [form, setForm] = useState(product || { name: "", category: "gob3", price: "", available: true, extraIds: [] });
-  React.useEffect(() => setForm(product || { name: "", category: "gob3", price: "", available: true, extraIds: [] }), [product, open]);
+function ProductModal({ open, onClose, product, extrasMaster, uploadProductImage, onSave }) {
+  const emptyForm = { name: "", category: "gob3", price: "", available: true, extraIds: [], imageUrl: null };
+  const [form, setForm] = useState(product || emptyForm);
+  React.useEffect(() => setForm(product || emptyForm), [product, open]);
+
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const fileInputRef = React.useRef(null);
 
   const toggleExtra = (id) => setForm((f) => ({ ...f, extraIds: f.extraIds.includes(id) ? f.extraIds.filter((e) => e !== id) : [...f.extraIds, id] }));
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file later
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Please choose an image file.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("Image must be under 5MB.");
+      return;
+    }
+
+    setUploadError("");
+    setUploading(true);
+    const { url, error } = await uploadProductImage(file);
+    setUploading(false);
+
+    if (error) {
+      setUploadError("Upload failed — please try again.");
+      return;
+    }
+    setForm((f) => ({ ...f, imageUrl: url }));
+  };
 
   return (
     <Modal open={open} onClose={onClose} title={product ? "Edit product" : "Add product"}>
       <div className="flex flex-col gap-4">
-        <div className="rounded-2xl aspect-[3/1] flex flex-col items-center justify-center gap-1.5" style={{ background: T.creamDeep, border: `2px dashed rgba(90,70,48,0.3)` }}>
-          <ImagePlus size={22} color={T.brown} />
-          <span className="text-xs font-bold opacity-60" style={{ color: T.brownDeep }}>Upload food image</span>
-        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="relative rounded-2xl aspect-[3/1] flex flex-col items-center justify-center gap-1.5 overflow-hidden w-full"
+          style={{ background: T.creamDeep, border: `2px dashed rgba(90,70,48,0.3)` }}
+        >
+          {form.imageUrl && !uploading && (
+            <img src={form.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          )}
+
+          {(uploading || !form.imageUrl) && (
+            <>
+              <ImagePlus size={22} color={T.brown} />
+              <span className="text-xs font-bold opacity-60" style={{ color: T.brownDeep }}>
+                {uploading ? "Uploading…" : "Upload food image"}
+              </span>
+            </>
+          )}
+
+          {form.imageUrl && !uploading && (
+            <div className="absolute inset-0 flex items-end justify-center pb-2 opacity-0 hover:opacity-100 transition-opacity"
+              style={{ background: "linear-gradient(transparent 40%, rgba(0,0,0,0.55))" }}>
+              <span className="text-xs font-bold text-white">Click to change</span>
+            </div>
+          )}
+        </button>
+
+        {form.imageUrl && !uploading && (
+          <button
+            type="button"
+            onClick={() => setForm((f) => ({ ...f, imageUrl: null }))}
+            className="text-xs font-bold self-start"
+            style={{ color: T.red }}
+          >
+            Remove image
+          </button>
+        )}
+
+        {uploadError && (
+          <p className="text-xs font-semibold" style={{ color: T.red }}>{uploadError}</p>
+        )}
+
         <FormField label="Product name">
           <input className="rounded-xl px-3 py-2.5 text-sm outline-none" style={inputStyle} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         </FormField>
@@ -355,7 +433,7 @@ function ProductModal({ open, onClose, product, extrasMaster, onSave }) {
           </div>
         </FormField>
         <Toggle on={form.available} onChange={(v) => setForm({ ...form, available: v })} label={form.available ? "Available on menu" : "Marked unavailable"} />
-        <Button variant="primary" onClick={() => onSave({ ...form, price: Number(form.price) || 0 })}>
+        <Button variant="primary" disabled={uploading} onClick={() => onSave({ ...form, price: Number(form.price) || 0 })}>
           {product ? "Save changes" : "Add product"}
         </Button>
       </div>
@@ -363,7 +441,7 @@ function ProductModal({ open, onClose, product, extrasMaster, onSave }) {
   );
 }
 
-function ProductsPage({ products, extrasMaster, addProduct, updateProduct, deleteProduct, toggleAvailable }) {
+function ProductsPage({ products, extrasMaster, addProduct, updateProduct, deleteProduct, toggleAvailable, uploadProductImage }) {
   const [editing, setEditing] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [filter, setFilter] = useState("all");
@@ -401,6 +479,7 @@ function ProductsPage({ products, extrasMaster, addProduct, updateProduct, delet
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left opacity-50 text-xs uppercase tracking-wide" style={{ color: T.ink }}>
+                <th className="p-4"></th>
                 <th className="p-4">Product</th>
                 <th className="p-4">Category</th>
                 <th className="p-4">Price</th>
@@ -412,6 +491,13 @@ function ProductsPage({ products, extrasMaster, addProduct, updateProduct, delet
             <tbody>
               {filtered.map((p) => (
                 <tr key={p.id} style={{ borderTop: `1px solid rgba(90,70,48,0.08)` }}>
+                  <td className="p-4">
+                    <div className="w-11 h-11 rounded-lg overflow-hidden flex items-center justify-center" style={{ background: T.creamDeep }}>
+                      {p.imageUrl
+                        ? <img src={p.imageUrl} alt="" className="w-full h-full object-cover" />
+                        : <ImagePlus size={16} color={T.brown} style={{ opacity: 0.5 }} />}
+                    </div>
+                  </td>
                   <td className="p-4 font-bold" style={{ color: T.ink }}>{p.name}</td>
                   <td className="p-4 opacity-70" style={{ color: T.ink }}>{p.category}</td>
                   <td className="p-4 font-bold" style={{ color: T.brownDeep }}>{GHS(p.price)}</td>
@@ -434,7 +520,7 @@ function ProductsPage({ products, extrasMaster, addProduct, updateProduct, delet
         </div>
       </Card>
 
-      <ProductModal open={modalOpen} onClose={() => setModalOpen(false)} product={editing} extrasMaster={extrasMaster} onSave={save} />
+      <ProductModal open={modalOpen} onClose={() => setModalOpen(false)} product={editing} extrasMaster={extrasMaster} uploadProductImage={uploadProductImage} onSave={save} />
     </div>
   );
 }
@@ -690,7 +776,7 @@ export default function CityBeansAdmin() {
 
   const {
     products, extrasMaster, loading: productsLoading,
-    addProduct, updateProduct, deleteProduct, toggleAvailable,
+    addProduct, updateProduct, deleteProduct, toggleAvailable, uploadProductImage,
   } = useAdminProducts();
 
   const { orders, loading: ordersLoading, changeStatus, assignRider } = useAdminOrders();
@@ -716,7 +802,7 @@ export default function CityBeansAdmin() {
         {page === "products" && (
           productsLoading
             ? <div className="p-8 text-sm opacity-60" style={{ color: T.ink }}>Loading products…</div>
-            : <ProductsPage products={products} extrasMaster={extrasMaster} addProduct={addProduct} updateProduct={updateProduct} deleteProduct={deleteProduct} toggleAvailable={toggleAvailable} />
+            : <ProductsPage products={products} extrasMaster={extrasMaster} addProduct={addProduct} updateProduct={updateProduct} deleteProduct={deleteProduct} toggleAvailable={toggleAvailable} uploadProductImage={uploadProductImage} />
         )}
 
         {page === "orders" && (

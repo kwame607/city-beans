@@ -12,7 +12,7 @@ export function useCreateOrder() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  async function createOrder({ cart, method, zoneId, form }) {
+  async function createOrder({ cart, method, zoneId, zoneName, form }) {
     setSubmitting(true);
     setError("");
 
@@ -25,9 +25,9 @@ export function useCreateOrder() {
       address:
         method === "delivery"
           ? {
-              region: form.region,
-              city: form.city,
-              area: form.area,
+              region: "Ashanti Region",
+              city: "Kumasi",
+              area: zoneName,
               ghana_post_gps: form.ghanaPostGPS,
               house_desc: form.houseDesc,
               instructions: form.instructions,

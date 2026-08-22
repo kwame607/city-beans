@@ -4,6 +4,7 @@ import cityBeansLogoDark from "./assets/dark.png";
 import { useMenuData } from "./hooks/useMenuData";
 import { useDeliveryZones } from "./hooks/useDeliveryZones";
 import { useCreateOrder } from "./hooks/useCreateOrder";
+import { useOrderTracking } from "./hooks/useOrderTracking";
 import {
   ArrowRight,
   ChevronLeft,
@@ -453,6 +454,7 @@ function MobileNav({
             ["menu", "Menu"],
             ["cart", "Cart"],
             ["checkout", "Checkout"],
+            ["track", "Track order"],
           ].map(([key, label]) => (
             <button
               key={key}
@@ -1591,6 +1593,144 @@ function CartPage({
 }
 
 /* =========================================================
+   TRACK ORDER
+========================================================= */
+
+const PICKUP_STEPS = [
+  { key: "received", label: "Order received", statuses: ["PENDING", "CONFIRMED"] },
+  { key: "preparing", label: "Preparing", statuses: ["PREPARING"] },
+  { key: "ready", label: "Ready for pickup", statuses: ["READY_FOR_PICKUP"] },
+  { key: "picked_up", label: "Picked up", statuses: ["PICKED_UP", "DELIVERED"] },
+];
+
+const DELIVERY_STEPS = [
+  { key: "received", label: "Order received", statuses: ["PENDING", "CONFIRMED"] },
+  { key: "preparing", label: "Preparing", statuses: ["PREPARING"] },
+  { key: "rider", label: "Rider assigned", statuses: ["RIDER_ASSIGNED"] },
+  { key: "picked_up", label: "Picked up", statuses: ["PICKED_UP"] },
+  { key: "out", label: "Out for delivery", statuses: ["OUT_FOR_DELIVERY"] },
+  { key: "delivered", label: "Delivered", statuses: ["DELIVERED"] },
+];
+
+function TrackOrderPage({ setPage, prefill }) {
+  const [orderNumber, setOrderNumber] = useState(prefill?.orderNumber || "");
+  const [phone, setPhone] = useState(prefill?.phone || "");
+  const { order, loading, error, trackOrder } = useOrderTracking();
+  const autoSubmitted = React.useRef(false);
+
+  React.useEffect(() => {
+    if (prefill?.orderNumber && prefill?.phone && !autoSubmitted.current) {
+      autoSubmitted.current = true;
+      trackOrder(prefill.orderNumber, prefill.phone);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefill]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    trackOrder(orderNumber, phone);
+  };
+
+  const steps = order?.method === "pickup" ? PICKUP_STEPS : DELIVERY_STEPS;
+  const currentIndex = order ? steps.findIndex((s) => s.statuses.includes(order.status)) : -1;
+  const isCancelled = order?.status === "CANCELLED";
+
+  return (
+    <main className="max-w-xl mx-auto px-4 md:px-8 pt-32 md:pt-40 pb-16 md:pb-24">
+      <h1 className="text-4xl font-black" style={{ fontFamily: "Georgia, serif" }}>
+        Track your order
+      </h1>
+      <p className="mt-3 text-black/55 text-sm">
+        Enter your order number and the phone number you checked out with.
+      </p>
+
+      <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-3">
+        <Input
+          label="Order number"
+          placeholder="CB-1049"
+          value={orderNumber}
+          onChange={(e) => setOrderNumber(e.target.value)}
+        />
+        <Input
+          label="Phone number"
+          placeholder="024 XXX XXXX"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+        />
+        <Button type="submit" disabled={loading || !orderNumber.trim() || !phone.trim()}>
+          {loading ? "Searching…" : "TRACK ORDER"}
+        </Button>
+      </form>
+
+      {error && (
+        <p className="mt-5 text-sm" style={{ color: "#C24A3D" }}>{error}</p>
+      )}
+
+      {order && (
+        <div className="mt-8 bg-white rounded-2xl border border-black/10 p-6">
+          <div className="font-black text-lg" style={{ fontFamily: "Georgia, serif" }}>
+            {order.order_number}
+          </div>
+          <div className="text-xs text-black/50 mt-1">
+            {order.guest_name} · {money(Number(order.total))}
+            {order.area ? ` · ${order.area}` : ""}
+          </div>
+
+          {isCancelled ? (
+            <div className="mt-5 rounded-xl p-4 text-sm font-semibold" style={{ background: "#F7E1DD", color: "#C24A3D" }}>
+              This order was cancelled.
+            </div>
+          ) : (
+            <div className="mt-6 flex flex-col gap-4">
+              {steps.map((step, i) => {
+                const done = i < currentIndex;
+                const current = i === currentIndex;
+                return (
+                  <div key={step.key} className="flex items-center gap-3">
+                    <div
+                      className="h-6 w-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
+                      style={{
+                        background: done || current ? T.green : "#E5DCC3",
+                        color: done || current ? "#fff" : "#8a7f5c",
+                      }}
+                    >
+                      {done ? "✓" : ""}
+                    </div>
+                    <span
+                      className={`text-sm ${current ? "font-bold" : done ? "" : "opacity-50"}`}
+                      style={{ color: T.ink }}
+                    >
+                      {step.label}
+                      {current ? " — current" : ""}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {order.items?.length > 0 && (
+            <div className="mt-6 pt-4 border-t border-dashed border-black/15 text-sm text-black/60">
+              {order.items.map((it, idx) => (
+                <div key={idx}>{it.quantity} × {it.name}</div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <button
+        onClick={() => setPage("home")}
+        className="mt-8 text-sm font-bold underline"
+        style={{ color: T.ink }}
+      >
+        Back home
+      </button>
+    </main>
+  );
+}
+
+/* =========================================================
    INPUT
 ========================================================= */
 
@@ -1625,6 +1765,78 @@ function Input({
 }
 
 /* =========================================================
+   LOCATION SEARCH
+   Curated to the areas City Beans actually delivers to
+   (Kotei / around KNUST, Kumasi) — a searchable list rather
+   than free-text address entry or a full maps API.
+========================================================= */
+
+function LocationSearchInput({ zones, zoneId, setZoneId, loading }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const selected = zones.find((z) => z.id === zoneId);
+
+  React.useEffect(() => {
+    if (selected) setQuery(selected.name);
+  }, [selected?.id]);
+
+  const filtered =
+    query.trim() === ""
+      ? zones
+      : zones.filter((z) =>
+          z.name.toLowerCase().includes(query.trim().toLowerCase())
+        );
+
+  return (
+    <div className="relative">
+      <span className="text-xs font-bold text-black/55">
+        Your area (Kumasi — around KNUST)
+      </span>
+      <input
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setZoneId("");
+          setOpen(true);
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder={loading ? "Loading areas…" : "Search — e.g. Ayeduase, Bomso, Kentinkrono"}
+        className="mt-1.5 w-full rounded-xl bg-white border border-black/10 px-4 py-3.5 outline-none focus:ring-2 focus:ring-[#557A3B]/25"
+      />
+
+      {open && (
+        <div className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-xl bg-white border border-black/10 shadow-lg">
+          {filtered.length > 0 ? (
+            filtered.map((z) => (
+              <button
+                key={z.id}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setZoneId(z.id);
+                  setQuery(z.name);
+                  setOpen(false);
+                }}
+                className="w-full text-left px-4 py-2.5 text-sm hover:bg-[#F7F1E3] flex items-center justify-between"
+              >
+                <span>{z.name}</span>
+                <span className="opacity-50 text-xs">{money(z.fee)}</span>
+              </button>
+            ))
+          ) : (
+            <div className="px-4 py-3 text-sm text-black/45">
+              We don't deliver there yet — currently serving areas around KNUST, Kumasi.
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* =========================================================
    CHECKOUT
 ========================================================= */
 
@@ -1640,9 +1852,6 @@ function CheckoutPage({
     fullName: "",
     phone: "",
     email: "",
-    region: "",
-    city: "",
-    area: "",
     ghanaPostGPS: "",
     houseDesc: "",
     instructions: "",
@@ -1653,6 +1862,7 @@ function CheckoutPage({
   const { createOrder, submitting, error: orderError } = useCreateOrder();
 
   const [placedOrder, setPlacedOrder] = useState(null);
+  const [receiptItems, setReceiptItems] = useState([]);
 
   const subtotal = cart.reduce(
     (sum, item) => sum + item.lineTotal,
@@ -1677,16 +1887,19 @@ function CheckoutPage({
     form.phone.trim() &&
     (
       method === "pickup" ||
-      (
-        form.city.trim() &&
-        form.area.trim() &&
-        zoneId
-      )
+      zoneId
     );
 
   const handlePlaceOrder = async () => {
-    const result = await createOrder({ cart, method, zoneId, form });
+    const result = await createOrder({
+      cart,
+      method,
+      zoneId,
+      zoneName: selectedZone?.name,
+      form,
+    });
     if (result) {
+      setReceiptItems(cart); // snapshot before the cart gets cleared below
       setPlacedOrder(result);
       onClear();
     }
@@ -1694,46 +1907,107 @@ function CheckoutPage({
 
   if (placedOrder) {
 
-    return (
-      <div className="max-w-xl mx-auto text-center py-28 px-5">
+    const now = new Date();
 
-        <div
-          className="h-16 w-16 rounded-full mx-auto flex items-center justify-center"
-          style={{
-            background: "#E4EBD9",
-          }}
-        >
-          <CircleCheck
-            size={32}
-            style={{
-              color: T.green,
-            }}
-          />
+    return (
+      <div className="max-w-xl mx-auto pt-32 md:pt-40 pb-16 px-5">
+
+        <style>{`
+          @media print {
+            body * { visibility: hidden; }
+            #cb-receipt, #cb-receipt * { visibility: visible; }
+            #cb-receipt { position: absolute; top: 0; left: 0; width: 100%; padding: 24px; }
+            .cb-no-print { display: none !important; }
+          }
+        `}</style>
+
+        <div className="text-center mb-8 cb-no-print">
+          <div
+            className="h-16 w-16 rounded-full mx-auto flex items-center justify-center"
+            style={{ background: "#E4EBD9" }}
+          >
+            <CircleCheck size={32} style={{ color: T.green }} />
+          </div>
+          <h1
+            className="text-3xl font-black mt-6"
+            style={{ fontFamily: "Georgia, serif" }}
+          >
+            Order received.
+          </h1>
+          <p className="mt-3 text-black/55 text-sm">
+            Real payment (Paystack) isn't wired up yet, so this order is
+            saved as PENDING until that's connected.
+          </p>
         </div>
 
-        <h1
-          className="text-4xl font-black mt-6"
-          style={{
-            fontFamily: "Georgia, serif",
-          }}
-        >
-          Order received.
-        </h1>
+        <div id="cb-receipt" className="bg-white rounded-2xl border border-black/10 p-6">
+          <div className="flex items-center justify-between border-b border-dashed border-black/15 pb-4 mb-4">
+            <div>
+              <div className="font-black text-lg" style={{ fontFamily: "Georgia, serif" }}>City Beans</div>
+              <div className="text-xs text-black/50">{LOCATION}</div>
+            </div>
+            <div className="text-right">
+              <div className="font-bold text-sm">{placedOrder.order_number}</div>
+              <div className="text-xs text-black/50">{now.toLocaleDateString()} {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
+            </div>
+          </div>
 
-        <p className="mt-3 text-black/55">
-          Order {placedOrder.order_number} — total {money(placedOrder.total)}.
-          Real payment (Paystack) isn't wired up yet, so this order is
-          saved as PENDING until that's connected.
-        </p>
+          <div className="text-sm mb-4">
+            <div><span className="text-black/50">Customer:</span> {form.fullName}</div>
+            <div><span className="text-black/50">Phone:</span> {form.phone}</div>
+            <div>
+              <span className="text-black/50">
+                {method === "delivery" ? "Delivery to:" : "Pickup from:"}
+              </span>{" "}
+              {method === "delivery"
+                ? `${selectedZone?.name}, Kumasi${form.houseDesc ? ` — ${form.houseDesc}` : ""}`
+                : LOCATION}
+            </div>
+          </div>
 
-        <Button
-          className="mt-7"
-          onClick={() => {
-            setPage("home");
-          }}
+          <div className="flex flex-col gap-2 border-t border-dashed border-black/15 pt-4">
+            {receiptItems.map((item) => (
+              <div key={item.cartId} className="flex justify-between text-sm gap-3">
+                <div>
+                  <div>{item.qty} × {item.name}</div>
+                  {item.extras?.length > 0 && (
+                    <div className="text-xs text-black/45">+ {item.extras.map((e) => e.name).join(", ")}</div>
+                  )}
+                </div>
+                <div className="font-semibold whitespace-nowrap">{money(item.lineTotal)}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-dashed border-black/15 mt-4 pt-4">
+            <div className="flex justify-between text-sm"><span>Subtotal</span><span>{money(placedOrder.subtotal)}</span></div>
+            <div className="flex justify-between text-sm mt-1"><span>Delivery</span><span>{money(placedOrder.delivery_fee)}</span></div>
+            <div className="flex justify-between font-black text-lg mt-2 pt-2 border-t border-black/15">
+              <span>Total</span><span>{money(placedOrder.total)}</span>
+            </div>
+          </div>
+
+          <div className="text-center text-xs text-black/40 mt-6 pt-4 border-t border-dashed border-black/15">
+            Thank you for ordering from City Beans — {PHONES.join(" · ")}
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6 cb-no-print">
+          <Button variant="light" className="flex-1" onClick={() => window.print()}>
+            PRINT / SAVE RECEIPT
+          </Button>
+          <Button className="flex-1" onClick={() => setPage("home")}>
+            BACK HOME
+          </Button>
+        </div>
+
+        <button
+          onClick={() => setPage({ name: "track", orderNumber: placedOrder.order_number, phone: form.phone })}
+          className="cb-no-print block w-full text-center mt-4 text-sm font-bold underline"
+          style={{ color: T.green }}
         >
-          BACK HOME
-        </Button>
+          Track this order
+        </button>
 
       </div>
     );
@@ -1854,44 +2128,14 @@ function CheckoutPage({
 
               <div className="grid sm:grid-cols-2 gap-3 mt-5">
 
-                <label className="block sm:col-span-2">
-                  <span className="text-xs font-bold text-black/55">
-                    Delivery zone
-                  </span>
-                  <select
-                    value={zoneId}
-                    onChange={(e) => setZoneId(e.target.value)}
-                    disabled={zonesLoading}
-                    className="mt-1.5 w-full rounded-xl bg-white border border-black/10 px-4 py-3.5 outline-none focus:ring-2 focus:ring-[#557A3B]/25"
-                  >
-                    <option value="">
-                      {zonesLoading ? "Loading zones…" : "Select your zone"}
-                    </option>
-                    {zones.map((z) => (
-                      <option key={z.id} value={z.id}>
-                        {z.name} — {money(z.fee)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <Input
-                  label="Region"
-                  value={form.region}
-                  onChange={set("region")}
-                />
-
-                <Input
-                  label="City / Town"
-                  value={form.city}
-                  onChange={set("city")}
-                />
-
-                <Input
-                  label="Area"
-                  value={form.area}
-                  onChange={set("area")}
-                />
+                <div className="sm:col-span-2">
+                  <LocationSearchInput
+                    zones={zones}
+                    zoneId={zoneId}
+                    setZoneId={setZoneId}
+                    loading={zonesLoading}
+                  />
+                </div>
 
                 <Input
                   label="GhanaPostGPS address"
@@ -2026,7 +2270,7 @@ function CheckoutPage({
    FOOTER
 ========================================================= */
 
-function Footer() {
+function Footer({ setPage }) {
   return (
     <footer className="bg-[#19150F] text-white">
 
@@ -2091,6 +2335,13 @@ function Footer() {
             Delivery & pickup available
           </p>
 
+          <button
+            onClick={() => setPage("track")}
+            className="block mt-4 text-sm font-bold text-white/70 hover:text-white transition underline"
+          >
+            Track your order
+          </button>
+
         </div>
 
         <div>
@@ -2146,13 +2397,22 @@ export default function CityBeansApp() {
   const [cart, setCart] =
     useState([]);
 
+  const [trackPrefill, setTrackPrefill] =
+    useState(null);
+
   const { products, loading, error } = useMenuData();
 
-  /* Handle category navigation */
+  /* Handle category navigation + track-order navigation */
 
   useEffect(() => {
 
     if (typeof page === "object") {
+
+      if (page.name === "track") {
+        setTrackPrefill({ orderNumber: page.orderNumber, phone: page.phone });
+        setPage("track");
+        return;
+      }
 
       setActiveCategory(
         page.category || "all"
@@ -2368,7 +2628,14 @@ export default function CityBeansApp() {
         />
       )}
 
-      <Footer />
+      {page === "track" && (
+        <TrackOrderPage
+          setPage={setPage}
+          prefill={trackPrefill}
+        />
+      )}
+
+      <Footer setPage={setPage} />
 
       <ProductModal
         product={modalProduct}

@@ -18,23 +18,23 @@ const FONTS = `
 `;
 
 const T = {
-  cream: "#F5EAC6",
-  creamDeep: "#EADEAF",
+  cream: "#F5EABD",
+  creamDeep: "#E3D9AF",
   paper: "#FBF7EC",
-  ink: "#241D10",
-  green: "#4C7A34",
-  greenDark: "#345423",
-  greenSoft: "#E4EDD9",
-  brown: "#7C6142",
-  brownDeep: "#5A4630",
-  gold: "#A9895B",
-  goldDeep: "#8B6B3D",
-  orange: "#E8973B",
-  orangeSoft: "#FBEAD3",
-  orangeDeep: "#C97C25",
+  surface: "#FFFBEF",
+  ink: "#1A1400",
+  green: "#609223",
+  greenDark: "#456919",
+  greenSoft: "#E2EBD7",
+  brown: "#917138",
+  brownDeep: "#685128",
+  gold: "#B7A27D",
+  goldDeep: "#917138",
+  orange: "#F7A110",
+  orangeSoft: "#FDF0DB",
+  orangeDeep: "#C5800C",
   red: "#C24A3D",
   redSoft: "#F7E1DD",
-  white: "#FFFDF6",
   black: "#171208",
   sidebar: "#1B160D",
 };
@@ -91,8 +91,8 @@ function Toggle({ on, onChange, label }) {
 function Button({ children, onClick, variant = "primary", className = "", icon: Icon, disabled }) {
   const base = "inline-flex items-center justify-center gap-2 font-bold rounded-xl px-4 py-2.5 text-sm transition-all active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed";
   const variants = {
-    primary: { background: T.green, color: T.white },
-    secondary: { background: T.white, color: T.ink, border: "1.5px solid rgba(36,29,16,0.15)" },
+    primary: { background: T.green, color: T.surface },
+    secondary: { background: T.surface, color: T.ink, border: "1.5px solid rgba(36,29,16,0.15)" },
     danger: { background: T.redSoft, color: T.red },
     ghost: { background: "transparent", color: T.ink },
   };
@@ -106,7 +106,7 @@ function Button({ children, onClick, variant = "primary", className = "", icon: 
 
 function Card({ children, className = "", ...rest }) {
   return (
-    <div className={`rounded-2xl ${className}`} style={{ background: T.white, boxShadow: "0 8px 24px -16px rgba(23,18,8,0.3)" }} {...rest}>
+    <div className={`rounded-2xl ${className}`} style={{ background: T.surface, boxShadow: "0 8px 24px -16px rgba(23,18,8,0.3)" }} {...rest}>
       {children}
     </div>
   );
@@ -136,7 +136,7 @@ function Modal({ open, onClose, title, children, wide }) {
         style={{ background: T.paper, boxShadow: "0 30px 60px -20px rgba(0,0,0,0.4)" }}>
         <div className="sticky top-0 flex items-center justify-between px-6 py-4" style={{ background: T.paper, borderBottom: `1.5px solid rgba(90,70,48,0.12)` }}>
           <span className="font-extrabold text-lg" style={{ fontFamily: "'Baloo 2', sans-serif", color: T.ink }}>{title}</span>
-          <button onClick={onClose} className="p-1.5 rounded-full" style={{ background: T.white }}><X size={18} color={T.ink} /></button>
+          <button onClick={onClose} className="p-1.5 rounded-full" style={{ background: T.surface }}><X size={18} color={T.ink} /></button>
         </div>
         <div className="p-6">{children}</div>
       </div>
@@ -227,15 +227,15 @@ function Topbar({ title, setMobileOpen }) {
         <span className="font-extrabold text-xl" style={{ fontFamily: "'Baloo 2', sans-serif", color: T.ink }}>{title}</span>
       </div>
       <div className="flex items-center gap-3">
-        <div className="hidden sm:flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: T.white, border: `1.5px solid rgba(90,70,48,0.12)` }}>
+        <div className="hidden sm:flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: T.surface, border: `1.5px solid rgba(90,70,48,0.12)` }}>
           <Search size={15} color={T.ink} style={{ opacity: 0.5 }} />
           <input placeholder="Search orders, products…" className="text-sm outline-none bg-transparent w-44" style={{ color: T.ink }} />
         </div>
-        <button className="relative p-2 rounded-xl" style={{ background: T.white, border: `1.5px solid rgba(90,70,48,0.12)` }}>
+        <button className="relative p-2 rounded-xl" style={{ background: T.surface, border: `1.5px solid rgba(90,70,48,0.12)` }}>
           <Bell size={16} color={T.ink} />
           <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full" style={{ background: T.orange }} />
         </button>
-        <div className="w-9 h-9 rounded-full flex items-center justify-center font-extrabold text-sm" style={{ background: T.green, color: T.white, fontFamily: "'Baloo 2', sans-serif" }}>
+        <div className="w-9 h-9 rounded-full flex items-center justify-center font-extrabold text-sm" style={{ background: T.green, color: T.surface, fontFamily: "'Baloo 2', sans-serif" }}>
           A
         </div>
       </div>
@@ -389,7 +389,7 @@ function ProductModal({ open, onClose, product, extrasMaster, uploadProductImage
           {form.imageUrl && !uploading && (
             <div className="absolute inset-0 flex items-end justify-center pb-2 opacity-0 hover:opacity-100 transition-opacity"
               style={{ background: "linear-gradient(transparent 40%, rgba(0,0,0,0.55))" }}>
-              <span className="text-xs font-bold text-white">Click to change</span>
+              <span className="text-xs font-bold text-[#FFFBEF]">Click to change</span>
             </div>
           )}
         </button>
@@ -466,7 +466,7 @@ function ProductsPage({ products, extrasMaster, addProduct, updateProduct, delet
         <div className="flex gap-2 overflow-x-auto">
           {["all", ...CATEGORY_OPTIONS].map((c) => (
             <button key={c} onClick={() => setFilter(c)} className="px-3.5 py-2 rounded-xl text-sm font-bold shrink-0"
-              style={{ fontFamily: "'Baloo 2', sans-serif", background: filter === c ? T.green : T.white, color: filter === c ? T.white : T.ink, border: `1.5px solid ${filter === c ? T.greenDark : "rgba(90,70,48,0.12)"}` }}>
+              style={{ fontFamily: "'Baloo 2', sans-serif", background: filter === c ? T.green : T.surface, color: filter === c ? T.surface : T.ink, border: `1.5px solid ${filter === c ? T.greenDark : "rgba(90,70,48,0.12)"}` }}>
               {c}
             </button>
           ))}
@@ -528,8 +528,29 @@ function ProductsPage({ products, extrasMaster, addProduct, updateProduct, delet
 /* ============================================================
    ORDERS PAGE
    ============================================================ */
-function OrderDrawer({ order, onClose, riders, onChangeStatus, onAssignRider }) {
+function OrderDrawer({ order, onClose, riders, onChangeStatus, onAssignRider, onVerifyPayment }) {
+  const [verifying, setVerifying] = useState(false);
+  const [verifyResult, setVerifyResult] = useState("");
+
   if (!order) return null;
+
+  const handleVerify = async () => {
+    setVerifying(true);
+    setVerifyResult("");
+    const { data, error } = await onVerifyPayment(order.paymentReference);
+    setVerifying(false);
+
+    if (error) {
+      setVerifyResult("Couldn't reach Paystack — try again in a moment.");
+      return;
+    }
+    const result = data?.result;
+    if (result === "confirmed") setVerifyResult("Confirmed — payment found and order updated.");
+    else if (result === "already_confirmed") setVerifyResult("Already marked as paid.");
+    else if (result === "not_paid") setVerifyResult(`Paystack shows this as "${data.paystackStatus}" — not paid.`);
+    else setVerifyResult("Couldn't verify — check the amount and try again.");
+  };
+
   return (
     <Modal open={!!order} onClose={onClose} title={order.orderNumber} wide>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -551,7 +572,22 @@ function OrderDrawer({ order, onClose, riders, onChangeStatus, onAssignRider }) 
 
         <div className="flex flex-col gap-4">
           <FormField label="Payment status">
-            <StatusBadge status={order.paymentStatus} />
+            <div className="flex items-center gap-3">
+              <StatusBadge status={order.paymentStatus} />
+              {order.paymentStatus !== "PAID" && order.paymentReference && (
+                <button
+                  onClick={handleVerify}
+                  disabled={verifying}
+                  className="text-xs font-bold underline disabled:opacity-50"
+                  style={{ color: T.green }}
+                >
+                  {verifying ? "Checking…" : "Verify with Paystack"}
+                </button>
+              )}
+            </div>
+            {verifyResult && (
+              <p className="text-xs mt-1.5 opacity-70" style={{ color: T.ink }}>{verifyResult}</p>
+            )}
           </FormField>
           <FormField label="Order status">
             <select className="rounded-xl px-3 py-2.5 text-sm outline-none" style={inputStyle} value={order.status} onChange={(e) => onChangeStatus(order.id, e.target.value)}>
@@ -575,7 +611,7 @@ function OrderDrawer({ order, onClose, riders, onChangeStatus, onAssignRider }) 
   );
 }
 
-function OrdersPage({ orders, riders, changeStatus, assignRider }) {
+function OrdersPage({ orders, riders, changeStatus, assignRider, verifyPayment }) {
   const [activeId, setActiveId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -588,7 +624,7 @@ function OrdersPage({ orders, riders, changeStatus, assignRider }) {
       <div className="flex gap-2 overflow-x-auto mb-5">
         {["all", ...DELIVERY_STATUSES].map((s) => (
           <button key={s} onClick={() => setStatusFilter(s)} className="px-3.5 py-2 rounded-xl text-xs font-bold shrink-0"
-            style={{ fontFamily: "'Baloo 2', sans-serif", background: statusFilter === s ? T.ink : T.white, color: statusFilter === s ? T.white : T.ink, border: `1.5px solid rgba(90,70,48,0.12)` }}>
+            style={{ fontFamily: "'Baloo 2', sans-serif", background: statusFilter === s ? T.ink : T.surface, color: statusFilter === s ? T.surface : T.ink, border: `1.5px solid rgba(90,70,48,0.12)` }}>
             {s === "all" ? "All" : s.replace(/_/g, " ")}
           </button>
         ))}
@@ -629,7 +665,7 @@ function OrdersPage({ orders, riders, changeStatus, assignRider }) {
         </div>
       </Card>
 
-      <OrderDrawer order={activeOrder} onClose={() => setActiveId(null)} riders={riders} onChangeStatus={changeStatus} onAssignRider={assignRider} />
+      <OrderDrawer order={activeOrder} onClose={() => setActiveId(null)} riders={riders} onChangeStatus={changeStatus} onAssignRider={assignRider} onVerifyPayment={verifyPayment} />
     </div>
   );
 }
@@ -779,7 +815,7 @@ export default function CityBeansAdmin() {
     addProduct, updateProduct, deleteProduct, toggleAvailable, uploadProductImage,
   } = useAdminProducts();
 
-  const { orders, loading: ordersLoading, changeStatus, assignRider } = useAdminOrders();
+  const { orders, loading: ordersLoading, changeStatus, assignRider, verifyPayment } = useAdminOrders();
 
   const { riders, loading: ridersLoading, addRider, toggleActive } = useAdminRiders();
 
@@ -808,7 +844,7 @@ export default function CityBeansAdmin() {
         {page === "orders" && (
           ordersLoading
             ? <div className="p-8 text-sm opacity-60" style={{ color: T.ink }}>Loading orders…</div>
-            : <OrdersPage orders={orders} riders={riders} changeStatus={changeStatus} assignRider={assignRider} />
+            : <OrdersPage orders={orders} riders={riders} changeStatus={changeStatus} assignRider={assignRider} verifyPayment={verifyPayment} />
         )}
 
         {page === "riders" && (

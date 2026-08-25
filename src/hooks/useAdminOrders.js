@@ -21,6 +21,7 @@ function one(rel) {
 function shapeOrder(o) {
   const address = one(o.delivery_addresses);
   const delivery = one(o.deliveries);
+  const payment = one(o.payments);
 
   return {
     id: o.id, // real UUID — used for updates, React keys
@@ -33,9 +34,8 @@ function shapeOrder(o) {
       .map((i) => `${i.quantity} × ${i.name_snapshot}`)
       .join(", "),
     total: Number(o.total),
-    // There's no Payment table yet (Paystack isn't wired up), so every
-    // real order shows PENDING here until that's connected.
-    paymentStatus: "PENDING",
+    paymentStatus: payment?.status || "PENDING", // no payment row yet = not started
+    paymentReference: payment?.reference || null,
     status: o.status,
     riderId: delivery?.rider_id || null,
     placedAt: timeAgo(o.created_at),
@@ -46,7 +46,8 @@ const SELECT = `
   id, order_number, guest_name, guest_phone, method, status, total, created_at,
   delivery_addresses ( area ),
   order_items ( name_snapshot, quantity ),
-  deliveries ( rider_id )
+  deliveries ( rider_id ),
+  payments ( status, reference )
 `;
 
 export function useAdminOrders() {
@@ -79,6 +80,7 @@ export function useAdminOrders() {
       .channel("admin-orders-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "deliveries" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "payments" }, load)
       .subscribe();
 
     return () => {
@@ -123,5 +125,16 @@ export function useAdminOrders() {
     [load]
   );
 
-  return { orders, loading, error, changeStatus, assignRider, refetch: load };
+  const verifyPayment = useCallback(
+    async (reference) => {
+      const { data, error } = await supabase.functions.invoke("verify-payment", {
+        body: { reference },
+      });
+      if (!error) load(); // pick up whatever the function actually changed
+      return { data, error };
+    },
+    [load]
+  );
+
+  return { orders, loading, error, changeStatus, assignRider, verifyPayment, refetch: load };
 }

@@ -5,6 +5,7 @@ import { useMenuData } from "./hooks/useMenuData";
 import { useDeliveryZones } from "./hooks/useDeliveryZones";
 import { useCreateOrder } from "./hooks/useCreateOrder";
 import { useOrderTracking } from "./hooks/useOrderTracking";
+import { usePaystackPayment } from "./hooks/usePaystackPayment";
 import {
   ArrowRight,
   ChevronLeft,
@@ -98,16 +99,16 @@ const FOOD_IMAGES = {
 ========================================================= */
 
 const T = {
-  cream: "#F7F1E3",
-  cream2: "#EFE5D0",
-  ink: "#19150F",
-  green: "#557A3B",
-  greenDark: "#345325",
-  brown: "#75573A",
-  gold: "#B18A55",
-  orange: "#D98A37",
-  white: "#FFFDF8",
-  black: "#11100D",
+  cream: "#F5EABD",
+  cream2: "#E3D9AF",
+  paper: "#FFFBEF",
+  ink: "#1A1400",
+  green: "#609223",
+  greenDark: "#456919",
+  brown: "#917138",
+  gold: "#B7A27D",
+  orange: "#F7A110",
+  black: "#000000",
 };
 
 const money = (n) =>
@@ -177,23 +178,23 @@ function Button({
   const styles = {
     green: {
       background: T.green,
-      color: T.white,
+      color: T.paper,
     },
 
     dark: {
       background: T.ink,
-      color: T.white,
+      color: T.paper,
     },
 
     light: {
-      background: T.white,
+      background: T.paper,
       color: T.ink,
       border: "1px solid rgba(25,21,15,.14)",
     },
 
     orange: {
       background: T.orange,
-      color: T.white,
+      color: T.paper,
     },
   };
 
@@ -232,7 +233,7 @@ function Header({ page, setPage, cartCount, setMobileOpen }) {
   return (
     <>
       {/* Top announcement */}
-      <div className="absolute top-0 left-0 right-0 z-50 text-white text-[10px] sm:text-xs text-center py-2 tracking-[.14em] uppercase bg-black/20 backdrop-blur-sm">
+      <div className="absolute top-0 left-0 right-0 z-50 text-[#FFFBEF] text-[10px] sm:text-xs text-center py-2 tracking-[.14em] uppercase bg-black/20 backdrop-blur-sm">
         Freshly prepared • Delivery & pickup available • Kotei, Sunshine Academy
       </div>
 
@@ -263,14 +264,14 @@ function Header({ page, setPage, cartCount, setMobileOpen }) {
             </button>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-white">
+            <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-[#FFFBEF]">
 
               <button
                 onClick={() => setPage("home")}
                 className={`relative py-2 transition ${
                   page === "home"
-                    ? "text-white"
-                    : "text-white/65 hover:text-white"
+                    ? "text-[#FFFBEF]"
+                    : "text-[#FFFBEF]/65 hover:text-[#FFFBEF]"
                 }`}
               >
                 HOME
@@ -287,8 +288,8 @@ function Header({ page, setPage, cartCount, setMobileOpen }) {
                 onClick={() => setPage("menu")}
                 className={`relative py-2 transition ${
                   page === "menu"
-                    ? "text-white"
-                    : "text-white/65 hover:text-white"
+                    ? "text-[#FFFBEF]"
+                    : "text-[#FFFBEF]/65 hover:text-[#FFFBEF]"
                 }`}
               >
                 MENU
@@ -305,8 +306,8 @@ function Header({ page, setPage, cartCount, setMobileOpen }) {
                 onClick={() => setPage("cart")}
                 className={`relative py-2 transition ${
                   page === "cart"
-                    ? "text-white"
-                    : "text-white/65 hover:text-white"
+                    ? "text-[#FFFBEF]"
+                    : "text-[#FFFBEF]/65 hover:text-[#FFFBEF]"
                 }`}
               >
                 CART
@@ -327,7 +328,7 @@ function Header({ page, setPage, cartCount, setMobileOpen }) {
                     "
                     style={{
                       background: T.orange,
-                      color: T.white,
+                      color: T.paper,
                     }}
                   >
                     {cartCount}
@@ -348,9 +349,9 @@ function Header({ page, setPage, cartCount, setMobileOpen }) {
                   h-10 w-10
                   items-center justify-center
                   rounded-full
-                  text-white/80
-                  hover:text-white
-                  hover:bg-white/10
+                  text-[#FFFBEF]/80
+                  hover:text-[#FFFBEF]
+                  hover:bg-[#FFFBEF]/10
                   transition
                 "
                 aria-label="Search menu"
@@ -365,13 +366,13 @@ function Header({ page, setPage, cartCount, setMobileOpen }) {
                   h-10
                   px-4
                   rounded-full
-                  bg-white
-                  text-[#19150F]
+                  bg-[#FFFBEF]
+                  text-[#1A1400]
                   flex items-center
                   gap-2
                   text-sm
                   font-bold
-                  hover:bg-[#F7F1E3]
+                  hover:bg-[#F5EABD]
                   transition
                 "
               >
@@ -395,12 +396,12 @@ function Header({ page, setPage, cartCount, setMobileOpen }) {
                   md:hidden
                   h-10 w-10
                   rounded-full
-                  bg-white/15
+                  bg-[#FFFBEF]/15
                   border border-white/20
-                  text-white
+                  text-[#FFFBEF]
                   flex items-center justify-center
                   backdrop-blur-sm
-                  hover:bg-white/25
+                  hover:bg-[#FFFBEF]/25
                   transition
                 "
                 aria-label="Open menu"
@@ -433,14 +434,14 @@ function MobileNav({
       onClick={onClose}
     >
       <div
-        className="absolute right-0 top-0 h-full w-[min(86vw,360px)] p-6 bg-[#F7F1E3] shadow-2xl"
+        className="absolute right-0 top-0 h-full w-[min(86vw,360px)] p-6 bg-[#F5EABD] shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
 
         <div className="flex justify-end">
           <button
             onClick={onClose}
-            className="h-10 w-10 rounded-full bg-white flex items-center justify-center"
+            className="h-10 w-10 rounded-full bg-[#FFFBEF] flex items-center justify-center"
             aria-label="Close menu"
           >
             <X size={20} />
@@ -509,7 +510,7 @@ function Hero({ setPage }) {
   }, []);
 
    return (
-    <section className="relative min-h-[760px] md:min-h-[850px] overflow-hidden bg-[#19150F]">
+    <section className="relative min-h-[760px] md:min-h-[850px] overflow-hidden bg-[#1A1400]">
 
       {/* Images */}
 
@@ -538,9 +539,9 @@ function Hero({ setPage }) {
 
       <div className="relative z-10 max-w-7xl mx-auto min-h-[650px] md:min-h-[720px] px-5 md:px-8 pt-28 md:pt-32 flex items-center">
 
-        <div className="max-w-3xl text-white">
+        <div className="max-w-3xl text-[#FFFBEF]">
 
-          <p className="text-xs md:text-sm uppercase tracking-[.25em] font-bold mb-6 text-white/75">
+          <p className="text-xs md:text-sm uppercase tracking-[.25em] font-bold mb-6" style={{ color: T.green }}>
             CITY BEANS
           </p>
 
@@ -566,7 +567,7 @@ function Hero({ setPage }) {
             made fresh.
           </h1>
 
-          <p className="mt-7 max-w-xl text-base md:text-lg leading-7 text-white/75">
+          <p className="mt-7 max-w-xl text-base md:text-lg leading-7 text-[#F5EABD]/85">
             Freshly prepared Gob3, Waakye and Beans Stew ,
             customized your way and delivered to your door.
           </p>
@@ -582,7 +583,7 @@ function Hero({ setPage }) {
             </Button>
 
             <Button
-              variant="light"
+              variant="green"
               onClick={() => setPage("menu")}
             >
               VIEW MENU
@@ -607,8 +608,8 @@ function Hero({ setPage }) {
               transition-all duration-500
               ${
                 index === current
-                  ? "w-10 bg-white"
-                  : "w-5 bg-white/40"
+                  ? "w-10 bg-[#FFFBEF]"
+                  : "w-5 bg-[#FFFBEF]/40"
               }
             `}
           />
@@ -616,9 +617,9 @@ function Hero({ setPage }) {
 
       </div>
 
-      <div className="absolute bottom-7 right-5 md:right-8 hidden sm:flex items-center gap-3 text-[10px] uppercase tracking-[.2em] text-white/60">
+      <div className="absolute bottom-7 right-5 md:right-8 hidden sm:flex items-center gap-3 text-[10px] uppercase tracking-[.2em] text-[#FFFBEF]/60">
         <span>Scroll</span>
-        <div className="w-10 h-px bg-white/40" />
+        <div className="w-10 h-px bg-[#FFFBEF]/40" />
       </div>
 
     </section>
@@ -650,7 +651,7 @@ function CategoryRail({
 
               color:
                 active === category.id
-                  ? T.white
+                  ? T.paper
                   : T.ink,
 
               border:
@@ -703,7 +704,7 @@ function ProductCard({
       onClick={onClick}
       className="
         group text-left
-        bg-white
+        bg-[#FFFBEF]
         rounded-[1.5rem]
         overflow-hidden
         border border-black/[.06]
@@ -723,12 +724,12 @@ function ProductCard({
         />
 
         {product.popular && (
-          <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full bg-white/90 backdrop-blur text-[10px] font-black uppercase tracking-wider">
+          <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full bg-[#FFFBEF]/90 backdrop-blur text-[10px] font-black uppercase tracking-wider">
             Popular
           </div>
         )}
 
-        <div className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-lg">
+        <div className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-[#FFFBEF] flex items-center justify-center shadow-lg">
           <Plus size={19} />
         </div>
 
@@ -803,7 +804,8 @@ function Home({
                 fontFamily: "Georgia, serif",
               }}
             >
-              Popular right now
+              <span style={{ color: T.black }}>Popular</span>{" "}
+              <span style={{ color: T.green }}>right now</span>
             </h2>
 
           </div>
@@ -834,7 +836,7 @@ function Home({
 
       {/* BRAND SECTION */}
 
-      <section className="bg-[#19150F] text-white py-20 md:py-28">
+      <section className="bg-[#1A1400] text-[#FFFBEF] py-20 md:py-28">
 
         <div className="max-w-7xl mx-auto px-4 md:px-8 grid md:grid-cols-2 gap-12 items-center">
 
@@ -853,6 +855,7 @@ function Home({
               className="text-4xl md:text-6xl font-black leading-[.95]"
               style={{
                 fontFamily: "Georgia, serif",
+                color: T.green,
               }}
             >
               Big flavour.
@@ -860,7 +863,7 @@ function Home({
               Zero fuss.
             </h2>
 
-            <p className="mt-6 max-w-md text-white/60 leading-7">
+            <p className="mt-6 max-w-md leading-7 text-[#F5EABD]/80">
               Choose a pack, customize it with your favourite
               extras, tell us where to send it, and we take care
               of the rest.
@@ -922,7 +925,8 @@ function Home({
               fontFamily: "Georgia, serif",
             }}
           >
-            What are you craving?
+            <span style={{ color: T.black }}>What are you</span>{" "}
+            <span style={{ color: T.green }}>craving?</span>
           </h2>
 
           <p className="mt-4 text-black/55">
@@ -972,7 +976,7 @@ function Home({
 
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 to-black/0" />
 
-                  <div className="absolute bottom-5 left-5 text-white">
+                  <div className="absolute bottom-5 left-5 text-[#FFFBEF]">
 
                     <div
                       className="text-2xl font-black"
@@ -983,7 +987,7 @@ function Home({
                       {category.name}
                     </div>
 
-                    <div className="text-xs text-white/70 mt-1">
+                    <div className="text-xs text-[#FFFBEF]/70 mt-1">
                       {category.blurb}
                     </div>
 
@@ -1022,7 +1026,7 @@ function MenuPage({
         );
 
   return (
-    <main className="min-h-[70vh] bg-[#F7F1E3]">
+    <main className="min-h-[70vh] bg-[#F5EABD]">
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 pt-32 md:pt-40 pb-12 md:pb-20">
 
@@ -1043,7 +1047,8 @@ function MenuPage({
               fontFamily: "Georgia, serif",
             }}
           >
-            Pick your pack.
+            <span style={{ color: T.black }}>Pick your</span>{" "}
+            <span style={{ color: T.green }}>pack.</span>
           </h1>
 
           <p className="mt-5 text-black/55 max-w-xl">
@@ -1080,7 +1085,7 @@ function MenuPage({
 
               <div
                 key={extra.id}
-                className="bg-white rounded-2xl p-5 border border-black/5"
+                className="bg-[#FFFBEF] rounded-2xl p-5 border border-black/5"
               >
 
                 <div className="text-3xl mb-2">
@@ -1097,7 +1102,7 @@ function MenuPage({
 
                 <button
                   onClick={() => addExtraToCart(extra)}
-                  className="mt-4 w-full py-2.5 rounded-full text-xs font-black text-white"
+                  className="mt-4 w-full py-2.5 rounded-full text-xs font-black text-[#FFFBEF]"
                   style={{
                     background: T.green,
                   }}
@@ -1154,13 +1159,13 @@ function ProductModal({
   return (
     <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-5">
 
-      <div className="w-full max-w-2xl max-h-[94vh] overflow-y-auto bg-[#F7F1E3] rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl">
+      <div className="w-full max-w-2xl max-h-[94vh] overflow-y-auto bg-[#F5EABD] rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl">
 
-        <div className="sticky top-0 z-10 p-4 flex justify-between bg-[#F7F1E3]/95 backdrop-blur border-b border-black/5">
+        <div className="sticky top-0 z-10 p-4 flex justify-between bg-[#F5EABD]/95 backdrop-blur border-b border-black/5">
 
           <button
             onClick={onClose}
-            className="h-10 w-10 rounded-full bg-white flex items-center justify-center"
+            className="h-10 w-10 rounded-full bg-[#FFFBEF] flex items-center justify-center"
             aria-label="Back"
           >
             <ChevronLeft />
@@ -1168,7 +1173,7 @@ function ProductModal({
 
           <button
             onClick={onClose}
-            className="h-10 w-10 rounded-full bg-white flex items-center justify-center"
+            className="h-10 w-10 rounded-full bg-[#FFFBEF] flex items-center justify-center"
             aria-label="Close"
           >
             <X />
@@ -1224,7 +1229,7 @@ function ProductModal({
                 onClick={() =>
                   setQty((q) => Math.max(1, q - 1))
                 }
-                className="h-9 w-9 rounded-full bg-white border flex items-center justify-center"
+                className="h-9 w-9 rounded-full bg-[#FFFBEF] border flex items-center justify-center"
               >
                 <Minus size={15} />
               </button>
@@ -1235,7 +1240,7 @@ function ProductModal({
                 onClick={() =>
                   setQty((q) => q + 1)
                 }
-                className="h-9 w-9 rounded-full text-white flex items-center justify-center"
+                className="h-9 w-9 rounded-full text-[#FFFBEF] flex items-center justify-center"
                 style={{
                   background: T.green,
                 }}
@@ -1258,12 +1263,12 @@ function ProductModal({
                 <label
                   key={extra.id}
                   className={`
-                    p-3 rounded-xl bg-white border
+                    p-3 rounded-xl bg-[#FFFBEF] border
                     flex items-center justify-between
                     cursor-pointer
                     ${
                       selected.includes(extra.id)
-                        ? "border-[#557A3B] ring-1 ring-[#557A3B]"
+                        ? "border-[#609223] ring-1 ring-[#609223]"
                         : ""
                     }
                   `}
@@ -1297,7 +1302,7 @@ function ProductModal({
 
           </div>
 
-          <div className="mt-7 p-5 rounded-2xl bg-white">
+          <div className="mt-7 p-5 rounded-2xl bg-[#FFFBEF]">
 
             <div className="flex justify-between text-sm text-black/55">
 
@@ -1438,7 +1443,7 @@ function CartPage({
             return (
               <div
                 key={item.cartId}
-                className="bg-white rounded-2xl p-4 border border-black/5 flex gap-4"
+                className="bg-[#FFFBEF] rounded-2xl p-4 border border-black/5 flex gap-4"
               >
 
                 <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0">
@@ -1516,7 +1521,7 @@ function CartPage({
                             1
                           )
                         }
-                        className="h-7 w-7 rounded-full text-white flex items-center justify-center"
+                        className="h-7 w-7 rounded-full text-[#FFFBEF] flex items-center justify-center"
                         style={{
                           background: T.green,
                         }}
@@ -1540,7 +1545,7 @@ function CartPage({
 
         </div>
 
-        <div className="h-fit bg-[#EFE5D0] rounded-2xl p-6">
+        <div className="h-fit bg-[#E3D9AF] rounded-2xl p-6">
 
           <b className="text-lg">
             Order summary
@@ -1667,7 +1672,7 @@ function TrackOrderPage({ setPage, prefill }) {
       )}
 
       {order && (
-        <div className="mt-8 bg-white rounded-2xl border border-black/10 p-6">
+        <div className="mt-8 bg-[#FFFBEF] rounded-2xl border border-black/10 p-6">
           <div className="font-black text-lg" style={{ fontFamily: "Georgia, serif" }}>
             {order.order_number}
           </div>
@@ -1691,7 +1696,7 @@ function TrackOrderPage({ setPage, prefill }) {
                       className="h-6 w-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
                       style={{
                         background: done || current ? T.green : "#E5DCC3",
-                        color: done || current ? "#fff" : "#8a7f5c",
+                        color: done || current ? T.paper : "#8a7f5c",
                       }}
                     >
                       {done ? "✓" : ""}
@@ -1751,12 +1756,12 @@ function Input({
           mt-1.5
           w-full
           rounded-xl
-          bg-white
+          bg-[#FFFBEF]
           border border-black/10
           px-4 py-3.5
           outline-none
           focus:ring-2
-          focus:ring-[#557A3B]/25
+          focus:ring-[#609223]/25
         "
       />
 
@@ -1803,11 +1808,11 @@ function LocationSearchInput({ zones, zoneId, setZoneId, loading }) {
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder={loading ? "Loading areas…" : "Search — e.g. Ayeduase, Bomso, Kentinkrono"}
-        className="mt-1.5 w-full rounded-xl bg-white border border-black/10 px-4 py-3.5 outline-none focus:ring-2 focus:ring-[#557A3B]/25"
+        className="mt-1.5 w-full rounded-xl bg-[#FFFBEF] border border-black/10 px-4 py-3.5 outline-none focus:ring-2 focus:ring-[#609223]/25"
       />
 
       {open && (
-        <div className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-xl bg-white border border-black/10 shadow-lg">
+        <div className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-xl bg-[#FFFBEF] border border-black/10 shadow-lg">
           {filtered.length > 0 ? (
             filtered.map((z) => (
               <button
@@ -1819,7 +1824,7 @@ function LocationSearchInput({ zones, zoneId, setZoneId, loading }) {
                   setQuery(z.name);
                   setOpen(false);
                 }}
-                className="w-full text-left px-4 py-2.5 text-sm hover:bg-[#F7F1E3] flex items-center justify-between"
+                className="w-full text-left px-4 py-2.5 text-sm hover:bg-[#F5EABD] flex items-center justify-between"
               >
                 <span>{z.name}</span>
                 <span className="opacity-50 text-xs">{money(z.fee)}</span>
@@ -1860,8 +1865,9 @@ function CheckoutPage({
   const [zoneId, setZoneId] = useState("");
   const { zones, loading: zonesLoading } = useDeliveryZones();
   const { createOrder, submitting, error: orderError } = useCreateOrder();
+  const { phase, error: paymentError, payForOrder } = usePaystackPayment();
 
-  const [placedOrder, setPlacedOrder] = useState(null);
+  const [orderResult, setOrderResult] = useState(null); // from create_order — has subtotal/fee/total for the receipt
   const [receiptItems, setReceiptItems] = useState([]);
 
   const subtotal = cart.reduce(
@@ -1898,15 +1904,85 @@ function CheckoutPage({
       zoneName: selectedZone?.name,
       form,
     });
-    if (result) {
-      setReceiptItems(cart); // snapshot before the cart gets cleared below
-      setPlacedOrder(result);
-      onClear();
-    }
+    if (!result) return;
+
+    setReceiptItems(cart); // snapshot before the cart gets cleared below
+    setOrderResult(result);
+    onClear();
+
+    payForOrder({
+      orderId: result.order_id,
+      orderNumber: result.order_number,
+      phone: form.phone,
+      email: form.email,
+    });
   };
 
-  if (placedOrder) {
+  const retryPayment = () => {
+    payForOrder({
+      orderId: orderResult.order_id,
+      orderNumber: orderResult.order_number,
+      phone: form.phone,
+      email: form.email,
+    });
+  };
 
+  // ---- Payment in progress / not yet confirmed ----
+  if (orderResult && phase !== "idle" && phase !== "done") {
+
+    return (
+      <div className="max-w-lg mx-auto pt-32 md:pt-40 pb-16 px-5 text-center">
+
+        {(phase === "opening" || phase === "confirming") && (
+          <>
+            <div className="h-10 w-10 mx-auto mb-5 rounded-full border-4 border-[#609223] border-t-transparent animate-spin" />
+            <h1 className="text-2xl font-black" style={{ fontFamily: "Georgia, serif" }}>
+              {phase === "opening" ? "Starting payment…" : "Confirming your payment…"}
+            </h1>
+            <p className="mt-2 text-sm text-black/55">
+              Order {orderResult.order_number} — {money(orderResult.total)}
+            </p>
+          </>
+        )}
+
+        {phase === "not_completed" && (
+          <>
+            <h1 className="text-2xl font-black" style={{ fontFamily: "Georgia, serif" }}>Payment not completed</h1>
+            <p className="mt-2 text-sm text-black/55">
+              Your order {orderResult.order_number} is saved — you can try paying again.
+            </p>
+            <Button className="mt-6" onClick={retryPayment}>TRY PAYMENT AGAIN</Button>
+          </>
+        )}
+
+        {phase === "slow" && (
+          <>
+            <h1 className="text-2xl font-black" style={{ fontFamily: "Georgia, serif" }}>Still confirming…</h1>
+            <p className="mt-2 text-sm text-black/55">
+              This is taking longer than usual. Your order {orderResult.order_number} is saved —
+              check Track Order in a moment, or contact us if it doesn't update.
+            </p>
+            <Button className="mt-6" onClick={() => setPage({ name: "track", orderNumber: orderResult.order_number, phone: form.phone })}>
+              TRACK THIS ORDER
+            </Button>
+          </>
+        )}
+
+        {phase === "error" && (
+          <>
+            <h1 className="text-2xl font-black" style={{ fontFamily: "Georgia, serif" }}>Something went wrong</h1>
+            <p className="mt-2 text-sm" style={{ color: "#C24A3D" }}>{paymentError}</p>
+            <Button className="mt-6" onClick={retryPayment}>TRY AGAIN</Button>
+          </>
+        )}
+
+      </div>
+    );
+  }
+
+  if (phase === "done" && orderResult) {
+
+    const placedOrder = orderResult;
     const now = new Date();
 
     return (
@@ -1932,15 +2008,14 @@ function CheckoutPage({
             className="text-3xl font-black mt-6"
             style={{ fontFamily: "Georgia, serif" }}
           >
-            Order received.
+            Payment confirmed.
           </h1>
           <p className="mt-3 text-black/55 text-sm">
-            Real payment (Paystack) isn't wired up yet, so this order is
-            saved as PENDING until that's connected.
+            Your payment has been verified — City Beans is preparing your order.
           </p>
         </div>
 
-        <div id="cb-receipt" className="bg-white rounded-2xl border border-black/10 p-6">
+        <div id="cb-receipt" className="bg-[#FFFBEF] rounded-2xl border border-black/10 p-6">
           <div className="flex items-center justify-between border-b border-dashed border-black/15 pb-4 mb-4">
             <div>
               <div className="font-black text-lg" style={{ fontFamily: "Georgia, serif" }}>City Beans</div>
@@ -2031,7 +2106,7 @@ function CheckoutPage({
 
           {/* DETAILS */}
 
-          <div className="bg-white p-6 rounded-2xl border border-black/5">
+          <div className="bg-[#FFFBEF] p-6 rounded-2xl border border-black/5">
 
             <h3 className="font-black text-lg">
               Your details
@@ -2064,7 +2139,7 @@ function CheckoutPage({
 
           {/* DELIVERY */}
 
-          <div className="bg-white p-6 rounded-2xl border border-black/5">
+          <div className="bg-[#FFFBEF] p-6 rounded-2xl border border-black/5">
 
             <h3 className="font-black text-lg">
               Delivery method
@@ -2081,11 +2156,11 @@ function CheckoutPage({
                   background:
                     method === "delivery"
                       ? T.green
-                      : T.white,
+                      : T.paper,
 
                   color:
                     method === "delivery"
-                      ? T.white
+                      ? T.paper
                       : T.ink,
                 }}
               >
@@ -2106,11 +2181,11 @@ function CheckoutPage({
                   background:
                     method === "pickup"
                       ? T.green
-                      : T.white,
+                      : T.paper,
 
                   color:
                     method === "pickup"
-                      ? T.white
+                      ? T.paper
                       : T.ink,
                 }}
               >
@@ -2160,7 +2235,7 @@ function CheckoutPage({
 
             ) : (
 
-              <div className="mt-5 rounded-xl p-4 bg-[#F7F1E3] flex gap-3">
+              <div className="mt-5 rounded-xl p-4 bg-[#F5EABD] flex gap-3">
 
                 <MapPin
                   style={{
@@ -2190,7 +2265,7 @@ function CheckoutPage({
 
         {/* SUMMARY */}
 
-        <aside className="h-fit bg-[#EFE5D0] p-6 rounded-2xl">
+        <aside className="h-fit bg-[#E3D9AF] p-6 rounded-2xl">
 
           <b className="text-lg">
             Order summary
@@ -2244,18 +2319,17 @@ function CheckoutPage({
           )}
 
           <Button
-            disabled={!can || submitting}
+            disabled={!can || submitting || !!orderResult}
             className="w-full mt-6"
             variant="orange"
             onClick={handlePlaceOrder}
           >
-            {submitting ? "PLACING ORDER…" : `PLACE ORDER — ${money(total)}`}
+            {submitting ? "PLACING ORDER…" : `PAY ${money(total)} WITH PAYSTACK`}
           </Button>
 
           <p className="text-[10px] text-black/40 text-center mt-3">
-            Payment isn't automated yet — Paystack integration is the
-            next step. For now, orders are recorded as PENDING and
-            payment is collected on delivery/pickup.
+            Prices and delivery fee are recalculated server-side, and payment
+            is verified directly with Paystack before your order is confirmed.
           </p>
 
         </aside>
@@ -2272,7 +2346,7 @@ function CheckoutPage({
 
 function Footer({ setPage }) {
   return (
-    <footer className="bg-[#19150F] text-white">
+    <footer className="bg-[#1A1400] text-[#FFFBEF]">
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-14 grid sm:grid-cols-2 lg:grid-cols-4 gap-10">
 
@@ -2280,7 +2354,7 @@ function Footer({ setPage }) {
 
           <Logo dark />
 
-          <p className="mt-5 max-w-sm text-sm leading-6 text-white/50">
+          <p className="mt-5 max-w-sm text-sm leading-6 text-[#F5EABD]/70">
             Fresh Ghanaian meals, prepared with care
             and served the City Beans way.
           </p>
@@ -2292,7 +2366,7 @@ function Footer({ setPage }) {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Chat with City Beans on WhatsApp"
-              className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition"
+              className="h-10 w-10 rounded-full bg-[#FFFBEF]/10 flex items-center justify-center hover:bg-[#FFFBEF]/20 transition"
             >
               <WhatsAppIcon size={18} />
             </a>
@@ -2302,7 +2376,7 @@ function Footer({ setPage }) {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="City Beans on Instagram"
-              className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition"
+              className="h-10 w-10 rounded-full bg-[#FFFBEF]/10 flex items-center justify-center hover:bg-[#FFFBEF]/20 transition"
             >
               <InstagramIcon size={18} />
             </a>
@@ -2312,7 +2386,7 @@ function Footer({ setPage }) {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="City Beans on TikTok"
-              className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition"
+              className="h-10 w-10 rounded-full bg-[#FFFBEF]/10 flex items-center justify-center hover:bg-[#FFFBEF]/20 transition"
             >
               <TikTokIcon size={18} />
             </a>
@@ -2323,21 +2397,22 @@ function Footer({ setPage }) {
 
         <div>
 
-          <b className="text-xs uppercase tracking-[.18em] text-white/45">
+          <b className="text-xs uppercase tracking-[.18em] text-[#F5EABD]/60">
             Visit
           </b>
 
-          <p className="mt-5 text-sm text-white/70">
+          <p className="mt-5 text-sm text-[#F5EABD]/85">
             {LOCATION}
           </p>
 
-          <p className="mt-3 text-sm text-white/70">
+          <p className="mt-3 text-sm text-[#F5EABD]/85">
             Delivery & pickup available
           </p>
 
           <button
             onClick={() => setPage("track")}
-            className="block mt-4 text-sm font-bold text-white/70 hover:text-white transition underline"
+            className="block mt-4 text-sm font-bold"
+            style={{ color: T.green }}
           >
             Track your order
           </button>
@@ -2346,20 +2421,20 @@ function Footer({ setPage }) {
 
         <div>
 
-          <b className="text-xs uppercase tracking-[.18em] text-white/45">
+          <b className="text-xs uppercase tracking-[.18em] text-[#F5EABD]/60">
             Contact
           </b>
 
           <a
             href={`tel:${PHONES[0].replace(/\s/g, "")}`}
-            className="block mt-5 text-sm text-white/70 hover:text-white transition"
+            className="block mt-5 text-sm text-[#F5EABD]/85 hover:text-[#FFFBEF] transition"
           >
             {PHONES[0]}
           </a>
 
           <a
             href={`tel:${PHONES[1].replace(/\s/g, "")}`}
-            className="block mt-2 text-sm text-white/70 hover:text-white transition"
+            className="block mt-2 text-sm text-[#F5EABD]/85 hover:text-[#FFFBEF] transition"
           >
             {PHONES[1]}
           </a>
@@ -2368,7 +2443,7 @@ function Footer({ setPage }) {
 
       </div>
 
-      <div className="border-t border-white/10 text-center py-5 text-[11px] text-white/35">
+      <div className="border-t border-white/10 text-center py-5 text-[11px] text-[#F5EABD]/50">
         © {new Date().getFullYear()} City Beans. All rights reserved.
       </div>
 
@@ -2425,9 +2500,9 @@ export default function CityBeansApp() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F7F1E3]">
+      <div className="min-h-screen flex items-center justify-center bg-[#F5EABD]">
         <div className="text-center">
-          <div className="h-10 w-10 mx-auto mb-4 rounded-full border-4 border-[#557A3B] border-t-transparent animate-spin" />
+          <div className="h-10 w-10 mx-auto mb-4 rounded-full border-4 border-[#609223] border-t-transparent animate-spin" />
           <p className="text-sm text-black/50">Loading the menu…</p>
         </div>
       </div>
@@ -2436,7 +2511,7 @@ export default function CityBeansApp() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F7F1E3] px-6 text-center">
+      <div className="min-h-screen flex items-center justify-center bg-[#F5EABD] px-6 text-center">
         <p className="text-black/60">
           Couldn't load the menu right now. Please refresh the page.
         </p>
@@ -2530,7 +2605,7 @@ export default function CityBeansApp() {
 
   return (
     <div
-      className="min-h-screen bg-[#F7F1E3] text-[#19150F]"
+      className="min-h-screen bg-[#F5EABD] text-[#1A1400]"
       style={{
         fontFamily:
           "Inter, system-ui, sans-serif",

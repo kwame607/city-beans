@@ -742,9 +742,10 @@ function ProductCard({
             type="button"
             onClick={onCustomize}
             className="
-              mt-3 w-full h-10 rounded-full
-              inline-flex items-center justify-center gap-1.5
-              text-xs font-bold
+              mt-2.5 w-full h-9 px-2 rounded-full
+              flex items-center justify-center gap-1
+              whitespace-nowrap overflow-hidden
+              text-[12px] sm:text-xs font-bold leading-none
               border border-[#609223]/30 bg-[#609223]/10
               transition
               hover:bg-[#609223] hover:text-[#FFFBEF] hover:border-[#609223]
@@ -753,8 +754,9 @@ function ProductCard({
             "
             style={{ color: T.greenDark }}
           >
-            <Plus size={14} strokeWidth={3} />
-            Customize with extras
+            <Plus size={13} strokeWidth={3} className="shrink-0" />
+            <span className="sm:hidden">Add extras</span>
+            <span className="hidden sm:inline">Customize with extras</span>
           </button>
         )}
       </div>
@@ -767,20 +769,10 @@ function ProductCard({
 ========================================================= */
 
 function ExtraTile({ extra, onAdd }) {
-  const hasIcon = extra.icon && extra.icon !== "🍽️";
-
   return (
-    <div className="flex items-center gap-3 bg-[#FFFBEF] rounded-xl border border-black/[.07] p-3">
-      <div
-        className="h-11 w-11 shrink-0 rounded-full flex items-center justify-center text-xl font-black"
-        style={{ background: T.cream2, color: T.brown }}
-        aria-hidden="true"
-      >
-        {hasIcon ? extra.icon : extra.name.charAt(0).toUpperCase()}
-      </div>
-
+    <div className="flex items-center gap-3 bg-[#FFFBEF] rounded-xl border border-black/[.07] py-3 pl-4 pr-3">
       <div className="min-w-0 flex-1">
-        <div className="font-bold text-sm leading-tight truncate">{extra.name}</div>
+        <div className="font-bold text-sm leading-snug">{extra.name}</div>
         <div className="text-sm font-black mt-0.5" style={{ color: "#B56A00" }}>
           {money(extra.price)}
         </div>
@@ -790,7 +782,7 @@ function ExtraTile({ extra, onAdd }) {
         type="button"
         onClick={onAdd}
         aria-label={`Add ${extra.name} to cart`}
-        className="h-11 w-11 shrink-0 rounded-full flex items-center justify-center transition active:scale-95"
+        className="h-11 w-11 shrink-0 rounded-full flex items-center justify-center transition active:scale-95 motion-reduce:transition-none"
         style={{ background: T.green, color: T.paper }}
       >
         <Plus size={18} strokeWidth={3} />

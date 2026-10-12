@@ -1693,9 +1693,13 @@ function TrackOrderPage({ setPage, prefill }) {
 
       <button
         onClick={() => setPage("home")}
-        className="mt-8 text-sm font-bold underline"
-        style={{ color: T.ink }}
+        className="group inline-flex items-center gap-1.5 mt-8 text-sm font-bold text-[#1A1400] hover:text-[#456919] focus-visible:text-[#456919] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#609223] rounded transition-colors motion-reduce:transition-none"
       >
+        <ChevronLeft
+          size={16}
+          strokeWidth={2.5}
+          className="transition-transform group-hover:-translate-x-1 group-focus-visible:-translate-x-1 motion-reduce:transition-none"
+        />
         Back home
       </button>
     </main>
@@ -2378,10 +2382,14 @@ function Footer({ setPage }) {
 
           <button
             onClick={() => setPage("track")}
-            className="block mt-4 text-sm font-bold"
-            style={{ color: T.green }}
+            className="group inline-flex items-center gap-1.5 mt-4 text-sm font-bold text-[#8FC24A] hover:text-[#FFFBEF] focus-visible:text-[#FFFBEF] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8FC24A] rounded transition-colors motion-reduce:transition-none"
           >
             Track your order
+            <ArrowRight
+              size={15}
+              strokeWidth={2.5}
+              className="transition-transform group-hover:translate-x-1 group-focus-visible:translate-x-1 motion-reduce:transition-none"
+            />
           </button>
 
         </div>

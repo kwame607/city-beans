@@ -231,13 +231,8 @@ function Button({
 function Header({ page, setPage, cartCount, setMobileOpen }) {
   return (
     <>
-      {/* Top announcement */}
-      <div className="absolute top-0 left-0 right-0 z-50 text-[#FFFBEF] text-[10px] sm:text-xs text-center py-2 tracking-[.14em] uppercase bg-black/20 backdrop-blur-sm">
-        Freshly prepared • Delivery & pickup available • Kotei, Sunshine Academy
-      </div>
-
       {/* Glass navbar */}
-      <header className="absolute top-[38px] left-0 right-0 z-40 px-4 md:px-6">
+      <header className="absolute top-4 left-0 right-0 z-40 px-4 md:px-6">
         <div className="max-w-5xl mx-auto">
 
           <div
@@ -539,7 +534,7 @@ function Hero({ goToMenu }) {
 
       {/* Content */}
 
-      <div className="relative z-10 max-w-7xl mx-auto min-h-[600px] md:min-h-[680px] px-5 md:px-8 pt-28 md:pt-32 pb-16 flex items-center">
+      <div className="relative z-10 max-w-7xl mx-auto min-h-[600px] md:min-h-[680px] px-5 md:px-8 pt-24 md:pt-28 pb-16 flex items-center">
 
         <div className="max-w-3xl text-[#FFFBEF]">
 

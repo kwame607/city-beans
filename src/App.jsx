@@ -741,9 +741,19 @@ function ProductCard({
           <button
             type="button"
             onClick={onCustomize}
-            className="mt-3 text-left text-xs font-bold underline underline-offset-2 py-1"
+            className="
+              mt-3 w-full h-10 rounded-full
+              inline-flex items-center justify-center gap-1.5
+              text-xs font-bold
+              border border-[#609223]/30 bg-[#609223]/10
+              transition
+              hover:bg-[#609223] hover:text-[#FFFBEF] hover:border-[#609223]
+              active:scale-[.98]
+              motion-reduce:transition-none
+            "
             style={{ color: T.greenDark }}
           >
+            <Plus size={14} strokeWidth={3} />
             Customize with extras
           </button>
         )}
@@ -815,6 +825,9 @@ function Home({
   );
 
   const q = query.trim().toLowerCase();
+
+  const borgaPack = meals.find((p) => /borga/i.test(p.name));
+  const echokePack = meals.find((p) => /echoke|echo?ke/i.test(p.name));
 
   const visible = meals.filter((product) => {
     const inCategory =
@@ -897,7 +910,7 @@ function Home({
 
           {categories.length > 2 && (
             <div
-              className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 md:mx-0 md:px-0 md:order-1"
+              className="flex gap-1.5 sm:gap-2 md:order-1"
               role="group"
               aria-label="Filter meals by category"
             >
@@ -909,7 +922,7 @@ function Home({
                     type="button"
                     onClick={() => setActiveCategory(category.id)}
                     aria-pressed={isActive}
-                    className="shrink-0 h-11 px-5 rounded-full text-sm font-semibold transition motion-reduce:transition-none"
+                    className="flex-1 sm:flex-none whitespace-nowrap h-11 px-1.5 sm:px-5 rounded-full text-[13px] sm:text-sm font-semibold transition motion-reduce:transition-none"
                     style={{
                       background: isActive ? T.green : "transparent",
                       color: isActive ? T.paper : T.ink,
@@ -1031,25 +1044,37 @@ function Home({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-3xl overflow-hidden aspect-[.9]">
-              <img
-                src={FOOD_IMAGES.waakye}
-                alt="Waakye"
-                loading="lazy"
-                decoding="async"
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            <div className="rounded-3xl overflow-hidden aspect-[.9] mt-8">
-              <img
-                src={FOOD_IMAGES.gob3}
-                alt="Gob3"
-                loading="lazy"
-                decoding="async"
-                className="w-full h-full object-cover"
-              />
-            </div>
+            {[
+              { label: "Borga Pack", product: borgaPack },
+              { label: "Echoke Pack", product: echokePack },
+            ].map(({ label, product }, index) => (
+              <figure
+                key={label}
+                className={`m-0 ${index === 1 ? "mt-8" : ""}`}
+              >
+                <div className="rounded-3xl overflow-hidden aspect-[.9] bg-[#2a2200] flex items-center justify-center">
+                  {product ? (
+                    <img
+                      src={getProductImage(product)}
+                      alt={product.name}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span
+                      className="px-4 text-center text-xl font-bold text-[#F5EABD]/70"
+                      style={{ fontFamily: "Georgia, serif" }}
+                    >
+                      {label}
+                    </span>
+                  )}
+                </div>
+                <figcaption className="mt-2 text-sm font-semibold text-[#F5EABD]/80">
+                  {label}
+                </figcaption>
+              </figure>
+            ))}
           </div>
         </div>
       </section>
@@ -2723,11 +2748,31 @@ export default function CityBeansApp() {
 
       <Footer setPage={navigate} />
 
+      {(page === "home" || page === "track") && (
+        <button
+          type="button"
+          onClick={() => navigate("cart")}
+          aria-label={`Open cart${cartCount ? `, ${cartCount} item${cartCount === 1 ? "" : "s"}` : ""}`}
+          className="fixed right-4 bottom-5 sm:right-6 sm:bottom-6 z-[75] h-14 w-14 rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(0,0,0,.28)] transition active:scale-95 hover:brightness-95 motion-reduce:transition-none"
+          style={{ background: T.orange, color: T.ink }}
+        >
+          <ShoppingBag size={24} />
+          {cartCount > 0 && (
+            <span
+              className="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1 rounded-full flex items-center justify-center text-[11px] font-black border-2 border-[#F5EABD]"
+              style={{ background: T.ink, color: T.paper }}
+            >
+              {cartCount}
+            </span>
+          )}
+        </button>
+      )}
+
       {toast && (
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[80] px-5 py-3 rounded-full text-sm font-bold shadow-xl flex items-center gap-2"
+          className="fixed bottom-24 sm:bottom-6 left-1/2 -translate-x-1/2 z-[80] max-w-[calc(100vw-2rem)] px-5 py-3 rounded-full text-sm font-bold shadow-xl flex items-center gap-2"
           style={{ background: T.ink, color: T.paper }}
         >
           <CircleCheck size={16} style={{ color: T.orange }} />

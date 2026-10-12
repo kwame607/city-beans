@@ -9,7 +9,6 @@ import { usePaystackPayment } from "./hooks/usePaystackPayment";
 import {
   ArrowRight,
   ChevronLeft,
-  Heart,
   MapPin,
   Menu as MenuIcon,
   Minus,
@@ -343,7 +342,10 @@ function Header({ page, setPage, cartCount, setMobileOpen }) {
 
               {/* Search */}
               <button
-                onClick={() => setPage("menu")}
+                onClick={() => {
+                  setPage("menu");
+                  window.setTimeout(() => document.getElementById("menu-search")?.focus({ preventScroll: true }), 700);
+                }}
                 className="
                   hidden sm:flex
                   h-10 w-10
@@ -495,7 +497,7 @@ function MobileNav({
    HERO SLIDESHOW
 ========================================================= */
 
-function Hero({ setPage }) {
+function Hero({ goToMenu }) {
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
@@ -510,7 +512,7 @@ function Hero({ setPage }) {
   }, []);
 
    return (
-    <section className="relative min-h-[760px] md:min-h-[850px] overflow-hidden bg-[#1A1400]">
+    <section className="relative min-h-[600px] md:min-h-[680px] overflow-hidden bg-[#1A1400]">
 
       {/* Images */}
 
@@ -537,7 +539,7 @@ function Hero({ setPage }) {
 
       {/* Content */}
 
-      <div className="relative z-10 max-w-7xl mx-auto min-h-[650px] md:min-h-[720px] px-5 md:px-8 pt-28 md:pt-32 flex items-center">
+      <div className="relative z-10 max-w-7xl mx-auto min-h-[600px] md:min-h-[680px] px-5 md:px-8 pt-28 md:pt-32 pb-16 flex items-center">
 
         <div className="max-w-3xl text-[#FFFBEF]">
 
@@ -546,7 +548,7 @@ function Hero({ setPage }) {
           </p>
 
           <h1
-            className="text-[3.6rem] sm:text-6xl md:text-7xl lg:text-[6.5rem] leading-[.88] font-black tracking-[-.05em]"
+            className="text-[2.75rem] sm:text-6xl md:text-7xl lg:text-[5.5rem] leading-[.88] font-black tracking-[-.05em]"
             style={{
               fontFamily: "Georgia, serif",
             }}
@@ -575,7 +577,7 @@ function Hero({ setPage }) {
           <div className="mt-9 flex flex-wrap gap-3">
 
             <Button
-              onClick={() => setPage("menu")}
+              onClick={goToMenu}
               variant="orange"
               icon={ArrowRight}
             >
@@ -584,9 +586,9 @@ function Hero({ setPage }) {
 
             <Button
               variant="green"
-              onClick={() => setPage("menu")}
+              onClick={goToMenu}
             >
-              VIEW MENU
+              EXPLORE MENU
             </Button>
 
           </div>
@@ -627,49 +629,6 @@ function Hero({ setPage }) {
 }
 
 /* =========================================================
-   CATEGORY RAIL
-========================================================= */
-
-function CategoryRail({
-  active,
-  setActive,
-}) {
-  return (
-    <div className="mt-10">
-      <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-
-        {CATEGORIES.map((category) => (
-          <button
-            key={category.id}
-            onClick={() => setActive(category.id)}
-            className="shrink-0 px-6 py-3 rounded-full text-sm font-semibold transition-all"
-            style={{
-              background:
-                active === category.id
-                  ? T.green
-                  : "transparent",
-
-              color:
-                active === category.id
-                  ? T.paper
-                  : T.ink,
-
-              border:
-                active === category.id
-                  ? `1px solid ${T.green}`
-                  : "1px solid rgba(25,21,15,.15)",
-            }}
-          >
-            {category.name}
-          </button>
-        ))}
-
-      </div>
-    </div>
-  );
-}
-
-/* =========================================================
    PRODUCT IMAGE
 ========================================================= */
 
@@ -695,72 +654,138 @@ function getProductImage(product) {
 
 function ProductCard({
   product,
-  onClick,
+  onCustomize,
+  onQuickAdd,
 }) {
   const image = getProductImage(product);
+  const hasExtras = (product.extrasList || []).length > 0;
+  const description = (product.includes || []).join(" · ");
 
   return (
-    <button
-      onClick={onClick}
+    <article
       className="
-        group text-left
+        group flex flex-col h-full
         bg-[#FFFBEF]
-        rounded-[1.5rem]
+        rounded-2xl
         overflow-hidden
-        border border-black/[.06]
-        shadow-[0_12px_35px_rgba(25,21,15,.07)]
-        hover:shadow-[0_20px_45px_rgba(25,21,15,.13)]
-        hover:-translate-y-1
-        transition-all
+        border border-black/[.07]
+        shadow-[0_8px_24px_rgba(25,21,15,.06)]
+        transition-all duration-300
+        motion-reduce:transition-none
+        md:hover:-translate-y-0.5
+        md:hover:shadow-[0_16px_36px_rgba(25,21,15,.12)]
       "
     >
-
-      <div className="relative aspect-[1.12] overflow-hidden">
-
+      <button
+        type="button"
+        onClick={onCustomize}
+        aria-label={`View ${product.name}`}
+        className="relative block w-full aspect-[4/3] overflow-hidden bg-[#E3D9AF]"
+      >
         <img
           src={image}
           alt={product.name}
-          className="w-full h-full object-cover transition duration-700 group-hover:scale-105"
+          loading="lazy"
+          decoding="async"
+          className="w-full h-full object-cover transition duration-500 motion-reduce:transition-none md:group-hover:scale-105"
         />
 
         {product.popular && (
-          <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full bg-[#FFFBEF]/90 backdrop-blur text-[10px] font-black uppercase tracking-wider">
+          <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-[#FFFBEF]/95 text-[10px] font-black uppercase tracking-wider">
             Popular
-          </div>
+          </span>
         )}
+      </button>
 
-        <div className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-[#FFFBEF] flex items-center justify-center shadow-lg">
-          <Plus size={19} />
-        </div>
+      <div className="flex flex-col flex-1 p-3 sm:p-4">
+        <h3
+          className="font-bold text-base sm:text-lg leading-snug line-clamp-2"
+          style={{ fontFamily: "Georgia, serif" }}
+        >
+          {product.name}
+        </h3>
 
-      </div>
+        <p className="mt-1.5 text-xs leading-5 text-black/55 line-clamp-2 min-h-[2.5rem]">
+          {description}
+        </p>
 
-      <div className="p-5">
-
-        <div className="flex justify-between gap-3">
-
-          <h3
-            className="font-bold text-lg"
-            style={{
-              fontFamily: "Georgia, serif",
-            }}
+        <div className="mt-auto pt-3 flex items-center justify-between gap-2">
+          <span
+            className="font-black text-base sm:text-lg whitespace-nowrap"
+            style={{ color: "#B56A00" }}
           >
-            {product.name}
-          </h3>
-
-          <span className="font-black whitespace-nowrap">
             {money(product.price)}
           </span>
 
+          <button
+            type="button"
+            onClick={onQuickAdd}
+            aria-label={`Add ${product.name} to cart`}
+            className="
+              inline-flex items-center justify-center gap-1.5
+              h-11 min-w-11 px-3 sm:px-4 rounded-full
+              text-sm font-black
+              transition
+              hover:brightness-95
+              active:scale-95
+              motion-reduce:transition-none
+            "
+            style={{ background: T.orange, color: T.ink }}
+          >
+            <Plus size={18} strokeWidth={3} />
+            <span className="hidden sm:inline">Add</span>
+          </button>
         </div>
 
-        <p className="mt-2 text-xs leading-5 text-black/50">
-          {product.includes.join(" · ")}
-        </p>
+        {hasExtras && (
+          <button
+            type="button"
+            onClick={onCustomize}
+            className="mt-3 text-left text-xs font-bold underline underline-offset-2 py-1"
+            style={{ color: T.greenDark }}
+          >
+            Customize with extras
+          </button>
+        )}
+      </div>
+    </article>
+  );
+}
 
+/* =========================================================
+   EXTRA TILE (add-on sold on its own)
+========================================================= */
+
+function ExtraTile({ extra, onAdd }) {
+  const hasIcon = extra.icon && extra.icon !== "🍽️";
+
+  return (
+    <div className="flex items-center gap-3 bg-[#FFFBEF] rounded-xl border border-black/[.07] p-3">
+      <div
+        className="h-11 w-11 shrink-0 rounded-full flex items-center justify-center text-xl font-black"
+        style={{ background: T.cream2, color: T.brown }}
+        aria-hidden="true"
+      >
+        {hasIcon ? extra.icon : extra.name.charAt(0).toUpperCase()}
       </div>
 
-    </button>
+      <div className="min-w-0 flex-1">
+        <div className="font-bold text-sm leading-tight truncate">{extra.name}</div>
+        <div className="text-sm font-black mt-0.5" style={{ color: "#B56A00" }}>
+          {money(extra.price)}
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={onAdd}
+        aria-label={`Add ${extra.name} to cart`}
+        className="h-11 w-11 shrink-0 rounded-full flex items-center justify-center transition active:scale-95"
+        style={{ background: T.green, color: T.paper }}
+      >
+        <Plus size={18} strokeWidth={3} />
+      </button>
+    </div>
   );
 }
 
@@ -770,357 +795,287 @@ function ProductCard({
 
 function Home({
   products,
-  setPage,
   openProduct,
+  quickAdd,
+  addExtraToCart,
+  activeCategory,
+  setActiveCategory,
+  goToMenu,
 }) {
-  const popular = products.filter(
-    (product) => product.popular
+  const [query, setQuery] = useState("");
+
+  const meals = products.filter((product) => product.category !== "extras");
+  const extras = products.filter((product) => product.category === "extras");
+
+  const categories = CATEGORIES.filter(
+    (category) =>
+      category.id === "all" ||
+      (category.id !== "extras" &&
+        meals.some((product) => product.category === category.id))
   );
+
+  const q = query.trim().toLowerCase();
+
+  const visible = meals.filter((product) => {
+    const inCategory =
+      activeCategory === "all" || product.category === activeCategory;
+    if (!inCategory) return false;
+    if (!q) return true;
+    return (
+      product.name.toLowerCase().includes(q) ||
+      (product.includes || []).some((item) => item.toLowerCase().includes(q))
+    );
+  });
+
+  const resetFilters = () => {
+    setQuery("");
+    setActiveCategory("all");
+  };
 
   return (
     <>
-      <Hero setPage={setPage} />
+      <Hero goToMenu={goToMenu} />
 
-      {/* POPULAR */}
+      {/* FULL MENU */}
 
-      <section className="max-w-7xl mx-auto px-4 md:px-8 py-20 md:py-28">
+      <section
+        id="menu"
+        className="scroll-mt-4 max-w-7xl mx-auto px-4 md:px-8 pt-12 md:pt-16 pb-14 md:pb-20"
+      >
+        <div className="max-w-2xl">
+          <p
+            className="text-xs uppercase tracking-[.2em] font-black mb-3"
+            style={{ color: T.green }}
+          >
+            Our menu
+          </p>
 
-        <div className="flex items-end justify-between mb-9">
+          <h2
+            className="text-4xl md:text-5xl font-black leading-[1.02]"
+            style={{ fontFamily: "Georgia, serif" }}
+          >
+            <span style={{ color: T.black }}>Made fresh,</span>{" "}
+            <span style={{ color: T.green }}>ready for you.</span>
+          </h2>
 
-          <div>
+          <p className="mt-4 text-black/60">
+            Gob3, Waakye and Beans Stew, prepared fresh and packed your way.
+            Pick a meal, add your extras, and we handle the rest.
+          </p>
+        </div>
 
-            <p
-              className="text-xs uppercase tracking-[.2em] font-black mb-3"
-              style={{
-                color: T.green,
-              }}
-            >
-              Customer favourites
-            </p>
+        {/* Controls */}
 
-            <h2
-              className="text-4xl md:text-5xl font-black"
-              style={{
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              <span style={{ color: T.black }}>Popular</span>{" "}
-              <span style={{ color: T.green }}>right now</span>
-            </h2>
-
+        <div className="mt-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="relative w-full md:max-w-xs md:order-2">
+            <label htmlFor="menu-search" className="sr-only">
+              Search meals
+            </label>
+            <Search
+              size={16}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-black/40 pointer-events-none"
+            />
+            <input
+              id="menu-search"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search meals"
+              className="w-full h-11 rounded-full bg-[#FFFBEF] border border-black/10 pl-10 pr-10 text-sm outline-none focus:ring-2 focus:ring-[#609223]/30"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full flex items-center justify-center text-black/50"
+              >
+                <X size={15} />
+              </button>
+            )}
           </div>
 
-          <button
-            onClick={() => setPage("menu")}
-            className="hidden sm:flex items-center gap-2 font-bold text-sm"
-          >
-            View menu
-            <ArrowRight size={16} />
-          </button>
-
+          {categories.length > 2 && (
+            <div
+              className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 md:mx-0 md:px-0 md:order-1"
+              role="group"
+              aria-label="Filter meals by category"
+            >
+              {categories.map((category) => {
+                const isActive = activeCategory === category.id;
+                return (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => setActiveCategory(category.id)}
+                    aria-pressed={isActive}
+                    className="shrink-0 h-11 px-5 rounded-full text-sm font-semibold transition motion-reduce:transition-none"
+                    style={{
+                      background: isActive ? T.green : "transparent",
+                      color: isActive ? T.paper : T.ink,
+                      border: isActive
+                        ? `1px solid ${T.green}`
+                        : "1px solid rgba(25,21,15,.18)",
+                    }}
+                  >
+                    {category.id === "all" ? "All Meals" : category.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <p className="sr-only" aria-live="polite">
+          Showing {visible.length} of {meals.length} meals
+        </p>
 
-          {popular.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onClick={() => openProduct(product)}
-            />
-          ))}
+        {/* Grid */}
 
-        </div>
-
+        {visible.length > 0 ? (
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 mt-6">
+            {visible.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onCustomize={() => openProduct(product)}
+                onQuickAdd={() => quickAdd(product)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-6 rounded-2xl bg-[#FFFBEF] border border-black/[.07] py-14 px-6 text-center">
+            <p className="font-bold">No meals match your search.</p>
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="mt-3 text-sm font-bold underline"
+              style={{ color: T.greenDark }}
+            >
+              Show all meals
+            </button>
+          </div>
+        )}
       </section>
 
-      {/* BRAND SECTION */}
+      {/* EXTRAS */}
 
-      <section className="bg-[#1A1400] text-[#FFFBEF] py-20 md:py-28">
+      {extras.length > 0 && (
+        <section
+          id="extras"
+          className="py-14 md:py-16"
+          style={{ background: T.cream2 }}
+        >
+          <div className="max-w-7xl mx-auto px-4 md:px-8">
+            <div className="max-w-2xl">
+              <p
+                className="text-xs uppercase tracking-[.2em] font-black mb-3"
+                style={{ color: T.greenDark }}
+              >
+                Extras
+              </p>
 
-        <div className="max-w-7xl mx-auto px-4 md:px-8 grid md:grid-cols-2 gap-12 items-center">
+              <h2
+                className="text-3xl md:text-4xl font-black"
+                style={{ fontFamily: "Georgia, serif" }}
+              >
+                Make it your way
+              </h2>
 
+              <p className="mt-3 text-black/60">
+                Add your favourites to complete your meal. You can also pick
+                extras for a specific meal using "Customize with extras" above.
+              </p>
+            </div>
+
+            <div className="mt-7 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {extras.map((extra) => (
+                <ExtraTile
+                  key={extra.id}
+                  extra={extra}
+                  onAdd={() => addExtraToCart(extra)}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ABOUT */}
+
+      <section className="bg-[#1A1400] text-[#FFFBEF] py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 grid md:grid-cols-2 gap-10 items-center">
           <div>
-
             <p
               className="text-xs uppercase tracking-[.2em] font-black mb-4"
-              style={{
-                color: T.gold,
-              }}
+              style={{ color: T.gold }}
             >
               The City Beans way
             </p>
 
             <h2
-              className="text-4xl md:text-6xl font-black leading-[.95]"
-              style={{
-                fontFamily: "Georgia, serif",
-                color: T.green,
-              }}
+              className="text-4xl md:text-5xl font-black leading-[.98]"
+              style={{ fontFamily: "Georgia, serif", color: T.green }}
             >
               Big flavour.
               <br />
               Zero fuss.
             </h2>
 
-            <p className="mt-6 max-w-md leading-7 text-[#F5EABD]/80">
-              Choose a pack, customize it with your favourite
-              extras, tell us where to send it, and we take care
-              of the rest.
+            <p className="mt-5 max-w-md leading-7 text-[#F5EABD]/80">
+              City Beans serves freshly prepared Ghanaian favourites. Choose
+              a pack, customize it with your favourite extras, tell us where
+              to send it, and we take care of the rest. Delivery and pickup
+              available at {LOCATION}.
             </p>
-
-            <Button
-              variant="orange"
-              className="mt-8"
-              onClick={() => setPage("menu")}
-              icon={ArrowRight}
-            >
-              START YOUR ORDER
-            </Button>
-
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-
-            <div className="rounded-[2rem] overflow-hidden aspect-[.82]">
+            <div className="rounded-3xl overflow-hidden aspect-[.9]">
               <img
                 src={FOOD_IMAGES.waakye}
                 alt="Waakye"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
             </div>
 
-            <div className="rounded-[2rem] overflow-hidden aspect-[.82] mt-12">
+            <div className="rounded-3xl overflow-hidden aspect-[.9] mt-8">
               <img
                 src={FOOD_IMAGES.gob3}
                 alt="Gob3"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
             </div>
-
           </div>
-
         </div>
-
       </section>
 
-      {/* CATEGORY DISCOVERY */}
+      {/* FINAL CTA */}
 
-      <section className="max-w-7xl mx-auto px-4 md:px-8 py-20">
-
-        <div className="text-center max-w-2xl mx-auto">
-
-          <p
-            className="text-xs uppercase tracking-[.2em] font-black mb-3"
-            style={{
-              color: T.green,
-            }}
-          >
-            Find your favourite
-          </p>
-
-          <h2
-            className="text-4xl md:text-5xl font-black"
-            style={{
-              fontFamily: "Georgia, serif",
-            }}
-          >
-            <span style={{ color: T.black }}>What are you</span>{" "}
-            <span style={{ color: T.green }}>craving?</span>
-          </h2>
-
-          <p className="mt-4 text-black/55">
-            Classic Ghanaian comfort food, built into packs
-            that make ordering simple.
-          </p>
-
-        </div>
-
-        <div className="grid sm:grid-cols-3 gap-5 mt-10">
-
-          {CATEGORIES
-            .filter((category) => category.id !== "extras")
-            .map((category) => {
-
-              const image =
-                category.id === "gob3"
-                  ? FOOD_IMAGES.gob3
-                  : category.id === "waakye"
-                  ? FOOD_IMAGES.waakye
-                  : FOOD_IMAGES.stew;
-
-              return (
-                <button
-                  key={category.id}
-                  onClick={() =>
-                    setPage({
-                      name: "menu",
-                      category: category.id,
-                    })
-                  }
-                  className="
-                    relative
-                    aspect-[1.15]
-                    rounded-[1.7rem]
-                    overflow-hidden
-                    text-left
-                    group
-                  "
-                >
-
-                  <img
-                    src={image}
-                    alt={category.name}
-                    className="absolute inset-0 w-full h-full object-cover transition duration-700 group-hover:scale-105"
-                  />
-
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 to-black/0" />
-
-                  <div className="absolute bottom-5 left-5 text-[#FFFBEF]">
-
-                    <div
-                      className="text-2xl font-black"
-                      style={{
-                        fontFamily: "Georgia, serif",
-                      }}
-                    >
-                      {category.name}
-                    </div>
-
-                    <div className="text-xs text-[#FFFBEF]/70 mt-1">
-                      {category.blurb}
-                    </div>
-
-                  </div>
-
-                </button>
-              );
-            })}
-
-        </div>
-
+      <section className="py-16 md:py-20 px-4 text-center" style={{ background: T.green }}>
+        <h2
+          className="text-3xl md:text-5xl font-black text-[#FFFBEF]"
+          style={{ fontFamily: "Georgia, serif" }}
+        >
+          Hungry? Your meal is a tap away.
+        </h2>
+        <p className="mt-3 text-[#FFFBEF]/85 max-w-md mx-auto">
+          Pick your favourites and we'll have them ready for delivery or pickup.
+        </p>
+        <Button
+          variant="orange"
+          className="mt-7"
+          onClick={goToMenu}
+          icon={ArrowRight}
+        >
+          ORDER YOUR MEAL
+        </Button>
       </section>
     </>
-  );
-}
-
-/* =========================================================
-   MENU PAGE
-========================================================= */
-
-function MenuPage({
-  products,
-  activeCategory,
-  setActiveCategory,
-  openProduct,
-  addExtraToCart,
-}) {
-  const isExtras = activeCategory === "extras";
-
-  const filtered =
-    activeCategory === "all"
-      ? products.filter((product) => product.category !== "extras")
-      : products.filter(
-          (product) =>
-            product.category === activeCategory
-        );
-
-  return (
-    <main className="min-h-[70vh] bg-[#F5EABD]">
-
-      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-32 md:pt-40 pb-12 md:pb-20">
-
-        <div className="max-w-2xl">
-
-          <p
-            className="text-xs uppercase tracking-[.2em] font-black"
-            style={{
-              color: T.green,
-            }}
-          >
-            Our menu
-          </p>
-
-          <h1
-            className="text-5xl md:text-7xl font-black mt-3"
-            style={{
-              fontFamily: "Georgia, serif",
-            }}
-          >
-            <span style={{ color: T.black }}>Pick your</span>{" "}
-            <span style={{ color: T.green }}>pack.</span>
-          </h1>
-
-          <p className="mt-5 text-black/55 max-w-xl">
-            Choose your meal, customize it with extras,
-            then checkout for delivery or pickup.
-          </p>
-
-        </div>
-
-        <CategoryRail
-          active={activeCategory}
-          setActive={setActiveCategory}
-        />
-
-        {!isExtras ? (
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-
-            {filtered.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onClick={() => openProduct(product)}
-              />
-            ))}
-
-          </div>
-
-        ) : (
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-6">
-
-            {filtered.map((extra) => (
-
-              <div
-                key={extra.id}
-                className="bg-[#FFFBEF] rounded-2xl p-5 border border-black/5"
-              >
-
-                <div className="text-3xl mb-2">
-                  {extra.icon}
-                </div>
-
-                <h3 className="font-bold">
-                  {extra.name}
-                </h3>
-
-                <div className="mt-1 font-black">
-                  {money(extra.price)}
-                </div>
-
-                <button
-                  onClick={() => addExtraToCart(extra)}
-                  className="mt-4 w-full py-2.5 rounded-full text-xs font-black text-[#FFFBEF]"
-                  style={{
-                    background: T.green,
-                  }}
-                >
-                  ADD
-                </button>
-
-              </div>
-
-            ))}
-
-          </div>
-
-        )}
-
-      </div>
-
-    </main>
   );
 }
 
@@ -2475,6 +2430,40 @@ export default function CityBeansApp() {
   const [trackPrefill, setTrackPrefill] =
     useState(null);
 
+  const [toast, setToast] =
+    useState(null);
+
+  /* Menu now lives on the homepage: "menu" scrolls to it */
+
+  const scrollToMenu = () => {
+    window.setTimeout(() => {
+      const el = document.getElementById("menu");
+      if (el) {
+        const reduce = window.matchMedia(
+          "(prefers-reduced-motion: reduce)"
+        ).matches;
+        el.scrollIntoView({
+          behavior: reduce ? "auto" : "smooth",
+          block: "start",
+        });
+      }
+    }, 60);
+  };
+
+  const goToMenu = () => {
+    setPage("home");
+    scrollToMenu();
+  };
+
+  const navigate = (target) => {
+    if (target === "menu") {
+      goToMenu();
+      return;
+    }
+    setPage(target);
+    if (typeof target === "string") window.scrollTo(0, 0);
+  };
+
   const { products, loading, error } = useMenuData();
 
   /* Handle category navigation + track-order navigation */
@@ -2493,7 +2482,8 @@ export default function CityBeansApp() {
         page.category || "all"
       );
 
-      setPage("menu");
+      setPage("home");
+      scrollToMenu();
     }
 
   }, [page]);
@@ -2521,6 +2511,15 @@ export default function CityBeansApp() {
 
   /* Add product */
 
+  const showToast = (message) => {
+    setToast(message);
+    window.clearTimeout(window.__cbToast);
+    window.__cbToast = window.setTimeout(
+      () => setToast(null),
+      2200
+    );
+  };
+
   const addToCart = (item) => {
 
     setCart((current) => [
@@ -2528,6 +2527,23 @@ export default function CityBeansApp() {
       item,
     ]);
 
+    showToast(`${item.name} added to cart`);
+
+  };
+
+  /* Quick add: same cart item shape the modal produces */
+
+  const quickAdd = (product) => {
+    addToCart({
+      cartId: `${product.id}-${Date.now()}`,
+      productId: product.id,
+      name: product.name,
+      basePrice: product.price,
+      image: getProductImage(product),
+      qty: 1,
+      extras: [],
+      lineTotal: product.price,
+    });
   };
 
   /* Add extra */
@@ -2548,6 +2564,8 @@ export default function CityBeansApp() {
       },
 
     ]);
+
+    showToast(`${extra.name} added to cart`);
 
   };
 
@@ -2638,6 +2656,11 @@ export default function CityBeansApp() {
           input {
             font: inherit;
           }
+
+          @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+          }
         `}
       </style>
 
@@ -2647,7 +2670,7 @@ export default function CityBeansApp() {
             ? page
             : "menu"
         }
-        setPage={setPage}
+        setPage={navigate}
         cartCount={cartCount}
         setMobileOpen={setMobileOpen}
       />
@@ -2657,30 +2680,18 @@ export default function CityBeansApp() {
         onClose={() =>
           setMobileOpen(false)
         }
-        setPage={setPage}
+        setPage={navigate}
       />
 
       {page === "home" && (
         <Home
           products={products}
-          setPage={setPage}
           openProduct={setModalProduct}
-        />
-      )}
-
-      {page === "menu" && (
-        <MenuPage
-          products={products}
+          quickAdd={quickAdd}
+          addExtraToCart={addExtraToCart}
           activeCategory={activeCategory}
-          setActiveCategory={
-            setActiveCategory
-          }
-          openProduct={
-            setModalProduct
-          }
-          addExtraToCart={
-            addExtraToCart
-          }
+          setActiveCategory={setActiveCategory}
+          goToMenu={goToMenu}
         />
       )}
 
@@ -2689,14 +2700,14 @@ export default function CityBeansApp() {
           cart={cart}
           updateQty={updateQty}
           removeItem={removeItem}
-          setPage={setPage}
+          setPage={navigate}
         />
       )}
 
       {page === "checkout" && (
         <CheckoutPage
           cart={cart}
-          setPage={setPage}
+          setPage={navigate}
           onClear={() =>
             setCart([])
           }
@@ -2705,12 +2716,32 @@ export default function CityBeansApp() {
 
       {page === "track" && (
         <TrackOrderPage
-          setPage={setPage}
+          setPage={navigate}
           prefill={trackPrefill}
         />
       )}
 
-      <Footer setPage={setPage} />
+      <Footer setPage={navigate} />
+
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[80] px-5 py-3 rounded-full text-sm font-bold shadow-xl flex items-center gap-2"
+          style={{ background: T.ink, color: T.paper }}
+        >
+          <CircleCheck size={16} style={{ color: T.orange }} />
+          {toast}
+          <button
+            type="button"
+            onClick={() => navigate("cart")}
+            className="ml-2 underline"
+            style={{ color: T.orange }}
+          >
+            View cart
+          </button>
+        </div>
+      )}
 
       <ProductModal
         product={modalProduct}

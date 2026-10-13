@@ -819,6 +819,24 @@ function ProductsPage({ query = "", products, extrasMaster, addProduct, updatePr
 /* ============================================================
    ORDERS PAGE
    ============================================================ */
+/* Turns a failed "verify payment" call into a sentence that says what went wrong */
+async function explainVerifyError(error) {
+  // The browser couldn't get an answer at all (offline, blocked, or the function isn't deployed)
+  if (error?.name === "FunctionsFetchError") {
+    return "Couldn't reach the verification service. Check your connection; if the function was just changed, make sure it has been deployed in Supabase.";
+  }
+  let detail = "";
+  try {
+    const body = await error?.context?.json?.();
+    detail = body?.error || "";
+  } catch { /* no readable message */ }
+
+  if (detail === "Not authenticated") return "Your admin session has expired — sign out and sign in again.";
+  if (detail === "Payment record not found") return "No payment record exists for this order's reference.";
+  if (detail) return detail;
+  return "The verification service returned an error. Open Supabase → Edge Functions → verify-payment → Logs for details.";
+}
+
 function OrderDrawer({ order, onClose, riders, onChangeStatus, onAssignRider, onVerifyPayment }) {
   const [verifying, setVerifying] = useState(false);
   const [verifyResult, setVerifyResult] = useState("");
@@ -832,12 +850,15 @@ function OrderDrawer({ order, onClose, riders, onChangeStatus, onAssignRider, on
     setVerifying(false);
 
     if (error) {
-      setVerifyResult("Couldn't reach Paystack — try again in a moment.");
+      setVerifyResult(await explainVerifyError(error));
       return;
     }
     const result = data?.result;
     if (result === "confirmed") setVerifyResult("Confirmed — payment found and order updated.");
     else if (result === "already_confirmed") setVerifyResult("Already marked as paid.");
+    else if (result === "not_paid" && data.paystackStatus === "unknown") {
+      setVerifyResult("Paystack doesn't recognise this payment. If the Paystack account or keys were changed after this order was placed, it can't be confirmed — place a new test order.");
+    }
     else if (result === "not_paid") setVerifyResult(`Paystack shows this as "${data.paystackStatus}" — not paid.`);
     else setVerifyResult("Couldn't verify — check the amount and try again.");
   };

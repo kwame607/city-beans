@@ -205,27 +205,40 @@ function useNewOrderAlerts(orders, loading) {
   const paidSeen = useRef(new Set());
   const ready = useRef(false);
   const audioCtx = useRef(null);
+  const [soundReady, setSoundReady] = useState(false);
   const mutedRef = useRef(muted);
   mutedRef.current = muted;
 
-  // Browsers only allow sound after the user has interacted with the page,
-  // so we prepare audio on the first tap/click/key press.
-  useEffect(() => {
-    const prime = () => {
-      try {
-        const Ctx = window.AudioContext || window.webkitAudioContext;
-        if (!Ctx) return;
-        if (!audioCtx.current) audioCtx.current = new Ctx();
-        if (audioCtx.current.state === "suspended") audioCtx.current.resume();
-      } catch { /* sound is optional */ }
-    };
-    window.addEventListener("pointerdown", prime);
-    window.addEventListener("keydown", prime);
-    return () => {
-      window.removeEventListener("pointerdown", prime);
-      window.removeEventListener("keydown", prime);
-    };
+  // Browsers only allow sound once the page has been interacted with. The
+  // click on "Sign in" happens before this page exists, so we try straight
+  // away on load, retry on every tap/click/key press, and tell the admin
+  // when sound is still switched off so she can enable it with one tap.
+  const unlockSound = useCallback(() => {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return false;
+      if (!audioCtx.current) {
+        audioCtx.current = new Ctx();
+        audioCtx.current.onstatechange = () =>
+          setSoundReady(audioCtx.current?.state === "running");
+      }
+      if (audioCtx.current.state === "suspended") audioCtx.current.resume();
+      setSoundReady(audioCtx.current.state === "running");
+      return audioCtx.current.state === "running";
+    } catch {
+      return false; // sound is optional
+    }
   }, []);
+
+  useEffect(() => {
+    unlockSound();
+    window.addEventListener("pointerdown", unlockSound);
+    window.addEventListener("keydown", unlockSound);
+    return () => {
+      window.removeEventListener("pointerdown", unlockSound);
+      window.removeEventListener("keydown", unlockSound);
+    };
+  }, [unlockSound]);
 
   const beep = useCallback(() => {
     try {
@@ -298,8 +311,14 @@ function useNewOrderAlerts(orders, loading) {
     });
   };
 
+  // Plays the alert once so she can hear that it works
+  const testSound = () => {
+    unlockSound();
+    window.setTimeout(beep, 80);
+  };
+
   return {
-    unseen, banner, muted, toggleMuted,
+    unseen, banner, muted, toggleMuted, soundReady, testSound,
     clear: () => { setUnseen(0); setBanner(null); },
     dismissBanner: () => setBanner(null),
   };
@@ -354,7 +373,7 @@ function Sidebar({ page, setPage, mobileOpen, setMobileOpen, unseen = 0 }) {
   );
 }
 
-function Topbar({ title, setMobileOpen, unseen, onBell, muted, onToggleMute, email, onSignOut, query, onQuery, searchPlaceholder }) {
+function Topbar({ title, setMobileOpen, unseen, onBell, muted, onToggleMute, soundReady, onTestSound, email, onSignOut, query, onQuery, searchPlaceholder }) {
   const initial = (email || "A").trim().charAt(0).toUpperCase();
   const iconBtn = { background: T.surface, border: `1.5px solid rgba(90,70,48,0.12)` };
 
@@ -377,15 +396,27 @@ function Topbar({ title, setMobileOpen, unseen, onBell, muted, onToggleMute, ema
             style={{ color: T.ink }}
           />
         </div>
-        <button
-          onClick={onToggleMute}
-          className="p-2 rounded-xl"
-          style={iconBtn}
-          aria-label={muted ? "Turn order sound on" : "Turn order sound off"}
-          title={muted ? "Order sound is off" : "Order sound is on"}
-        >
-          {muted ? <VolumeX size={16} color={T.ink} style={{ opacity: 0.5 }} /> : <Volume2 size={16} color={T.ink} />}
-        </button>
+        {!muted && !soundReady ? (
+          <button
+            onClick={onTestSound}
+            className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
+            style={{ background: T.orangeSoft, border: `1.5px solid ${T.orange}`, color: T.orangeDeep, fontFamily: "'Baloo 2', sans-serif" }}
+            title="Your browser is blocking sound until you tap here"
+          >
+            <VolumeX size={16} />
+            <span className="hidden sm:inline">Tap to enable sound</span>
+          </button>
+        ) : (
+          <button
+            onClick={onToggleMute}
+            className="p-2 rounded-xl"
+            style={iconBtn}
+            aria-label={muted ? "Turn order sound on" : "Turn order sound off"}
+            title={muted ? "Order sound is off" : "Order sound is on"}
+          >
+            {muted ? <VolumeX size={16} color={T.ink} style={{ opacity: 0.5 }} /> : <Volume2 size={16} color={T.ink} />}
+          </button>
+        )}
         <button
           onClick={onBell}
           className="relative p-2 rounded-xl"
@@ -1176,6 +1207,8 @@ export default function CityBeansAdmin() {
           onBell={() => goTo("orders")}
           muted={alerts.muted}
           onToggleMute={alerts.toggleMuted}
+          soundReady={alerts.soundReady}
+          onTestSound={alerts.testSound}
           email={session?.user?.email}
           onSignOut={signOut}
           query={query}

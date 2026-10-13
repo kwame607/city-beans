@@ -145,6 +145,18 @@ function Modal({ open, onClose, title, children, wide }) {
   );
 }
 
+function ConfirmDialog({ open, title, message, confirmLabel = "Delete", onConfirm, onCancel }) {
+  return (
+    <Modal open={open} onClose={onCancel} title={title}>
+      <p className="text-sm leading-6 mb-6" style={{ color: T.ink }}>{message}</p>
+      <div className="flex gap-3 justify-end">
+        <Button variant="secondary" onClick={onCancel}>Cancel</Button>
+        <Button variant="danger" icon={Trash2} onClick={onConfirm}>{confirmLabel}</Button>
+      </div>
+    </Modal>
+  );
+}
+
 function Logo({ variant = "dark", size = 30 }) {
   const ring = variant === "dark" ? T.gold : T.goldDeep;
   const bean = variant === "dark" ? T.gold : T.brown;
@@ -408,28 +420,65 @@ function Topbar({ title, setMobileOpen, unseen, onBell, muted, onToggleMute, ema
    DASHBOARD PAGE
    ============================================================ */
 function DashboardPage({ orders, riders }) {
+  const [period, setPeriod] = useState("today");
+
   const stats = useMemo(() => {
-    const total = orders.length;
-    const todayStr = new Date().toDateString();
-    const today = orders.filter((o) => o.createdAt && new Date(o.createdAt).toDateString() === todayStr).length;
-    const pending = orders.filter((o) => !["DELIVERED", "CANCELLED"].includes(o.status)).length;
-    const completed = orders.filter((o) => o.status === "DELIVERED").length;
-    const revenue = orders.filter((o) => o.paymentStatus === "PAID").reduce((s, o) => s + o.total, 0);
-    const active = orders.filter((o) => ["RIDER_ASSIGNED", "PICKED_UP", "OUT_FOR_DELIVERY"].includes(o.status)).length;
-    return { total, today, pending, completed, revenue, active };
-  }, [orders]);
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const DAY = 24 * 60 * 60 * 1000;
+    const start =
+      period === "today" ? startOfDay :
+      period === "week" ? new Date(startOfDay.getTime() - 6 * DAY) :
+      period === "month" ? new Date(startOfDay.getTime() - 29 * DAY) :
+      null;
+
+    const inPeriod = start ? orders.filter((o) => o.createdAt && new Date(o.createdAt) >= start) : orders;
+    const paid = inPeriod.filter((o) => o.paymentStatus === "PAID");
+    const revenue = paid.reduce((sum, o) => sum + o.total, 0);
+
+    return {
+      count: inPeriod.length,
+      revenue,
+      avg: paid.length ? revenue / paid.length : 0,
+      completed: inPeriod.filter((o) => o.status === "DELIVERED").length,
+      // "right now" numbers, not limited to the period
+      pending: orders.filter((o) => !["DELIVERED", "CANCELLED"].includes(o.status)).length,
+      active: orders.filter((o) => ["RIDER_ASSIGNED", "PICKED_UP", "OUT_FOR_DELIVERY"].includes(o.status)).length,
+    };
+  }, [orders, period]);
+
+  const PERIODS = [
+    { key: "today", label: "Today" },
+    { key: "week", label: "7 days" },
+    { key: "month", label: "30 days" },
+    { key: "all", label: "All time" },
+  ];
 
   const cards = [
-    { label: "Total Orders", value: stats.total, icon: ClipboardList, tone: T.green },
-    { label: "Today's Orders", value: stats.today, icon: TrendingUp, tone: T.orange },
-    { label: "Pending Orders", value: stats.pending, icon: Clock, tone: T.gold },
-    { label: "Completed Orders", value: stats.completed, icon: CheckCircle2, tone: T.green },
+    { label: "Orders", value: stats.count, icon: ClipboardList, tone: T.green },
     { label: "Revenue (paid)", value: GHS(stats.revenue), icon: DollarSign, tone: T.brownDeep },
-    { label: "Active Deliveries", value: stats.active, icon: Truck, tone: T.orangeDeep },
+    { label: "Average paid order", value: GHS(stats.avg), icon: TrendingUp, tone: T.orange },
+    { label: "Completed", value: stats.completed, icon: CheckCircle2, tone: T.green },
+    { label: "Open orders · right now", value: stats.pending, icon: Clock, tone: T.gold },
+    { label: "Active deliveries · right now", value: stats.active, icon: Truck, tone: T.orangeDeep },
   ];
 
   return (
     <div className="p-5 md:p-8">
+      <div className="flex gap-2 overflow-x-auto mb-5" role="group" aria-label="Show figures for">
+        {PERIODS.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setPeriod(key)}
+            aria-pressed={period === key}
+            className="px-3.5 py-2 rounded-xl text-xs font-bold shrink-0"
+            style={{ fontFamily: "'Baloo 2', sans-serif", background: period === key ? T.ink : T.surface, color: period === key ? T.surface : T.ink, border: `1.5px solid rgba(90,70,48,0.12)` }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {cards.map((c) => (
           <Card key={c.label} className="p-5">
@@ -607,6 +656,7 @@ function ProductsPage({ query = "", products, extrasMaster, addProduct, updatePr
   const [editing, setEditing] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [toDelete, setToDelete] = useState(null);
 
   const openNew = () => { setEditing(null); setModalOpen(true); };
   const openEdit = (p) => { setEditing(p); setModalOpen(true); };
@@ -639,7 +689,7 @@ function ProductsPage({ query = "", products, extrasMaster, addProduct, updatePr
         <Button icon={Plus} onClick={openNew}>Add product</Button>
       </div>
 
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden hidden md:block">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -680,7 +730,7 @@ function ProductsPage({ query = "", products, extrasMaster, addProduct, updatePr
                   <td className="p-4">
                     <div className="flex items-center justify-end gap-2">
                       <button onClick={() => openEdit(p)} className="p-2 rounded-lg" style={{ background: T.paper }}><Pencil size={14} color={T.ink} /></button>
-                      <button onClick={() => deleteProduct(p.id)} className="p-2 rounded-lg" style={{ background: T.redSoft }}><Trash2 size={14} color={T.red} /></button>
+                      <button onClick={() => setToDelete(p)} aria-label={`Delete ${p.name}`} className="p-2 rounded-lg" style={{ background: T.redSoft }}><Trash2 size={14} color={T.red} /></button>
                     </div>
                   </td>
                 </tr>
@@ -689,6 +739,46 @@ function ProductsPage({ query = "", products, extrasMaster, addProduct, updatePr
           </table>
         </div>
       </Card>
+
+      {/* Phone layout: one card per product */}
+      <div className="md:hidden flex flex-col gap-3">
+        {filtered.length === 0 && (
+          <div className="p-8 text-center text-sm opacity-60" style={{ color: T.ink }}>No products match your search or filter.</div>
+        )}
+        {filtered.map((p) => (
+          <Card key={p.id} className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center shrink-0" style={{ background: T.creamDeep }}>
+                {p.imageUrl
+                  ? <img src={p.imageUrl} alt="" className="w-full h-full object-cover" />
+                  : <ImagePlus size={18} color={T.brown} style={{ opacity: 0.5 }} />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="font-bold truncate" style={{ color: T.ink }}>{p.name}</div>
+                <div className="text-xs opacity-60 mt-0.5" style={{ color: T.ink }}>{p.category} · {p.extraIds.length} extras</div>
+                <div className="font-bold mt-0.5" style={{ color: T.brownDeep }}>{GHS(p.price)}</div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: `1px solid rgba(90,70,48,0.08)` }}>
+              <button onClick={() => toggleAvailable(p.id)} aria-label={`Toggle availability of ${p.name}`}>
+                <StatusBadge status={p.available ? "CONFIRMED" : "CANCELLED"} />
+              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => openEdit(p)} aria-label={`Edit ${p.name}`} className="p-2.5 rounded-lg" style={{ background: T.paper }}><Pencil size={15} color={T.ink} /></button>
+                <button onClick={() => setToDelete(p)} aria-label={`Delete ${p.name}`} className="p-2.5 rounded-lg" style={{ background: T.redSoft }}><Trash2 size={15} color={T.red} /></button>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <ConfirmDialog
+        open={!!toDelete}
+        title="Delete product?"
+        message={toDelete ? `Delete "${toDelete.name}" from the menu? This cannot be undone. To hide it for now instead, close this and switch it to unavailable.` : ""}
+        onCancel={() => setToDelete(null)}
+        onConfirm={() => { deleteProduct(toDelete.id); setToDelete(null); }}
+      />
 
       <ProductModal open={modalOpen} onClose={() => setModalOpen(false)} product={editing} extrasMaster={extrasMaster} uploadProductImage={uploadProductImage} onSave={save} />
     </div>
@@ -814,7 +904,7 @@ function OrdersPage({ query = "", orders, riders, changeStatus, assignRider, ver
         ))}
       </div>
 
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden hidden md:block">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -853,6 +943,36 @@ function OrdersPage({ query = "", orders, riders, changeStatus, assignRider, ver
           </table>
         </div>
       </Card>
+
+      {/* Phone layout: one tappable card per order */}
+      <div className="md:hidden flex flex-col gap-3">
+        {filtered.length === 0 && (
+          <div className="p-8 text-center text-sm opacity-60" style={{ color: T.ink }}>
+            {q || statusFilter !== "all" ? "No orders match your search or filter." : "No orders yet."}
+          </div>
+        )}
+        {filtered.map((o) => (
+          <button key={o.id} onClick={() => setActiveId(o.id)} className="text-left w-full" aria-label={`Open order ${o.orderNumber}`}>
+            <Card className="p-4 active:scale-[0.99] transition-transform">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-extrabold" style={{ fontFamily: "'Baloo 2', sans-serif", color: T.ink }}>{o.orderNumber}</div>
+                  <div className="text-sm truncate" style={{ color: T.ink }}>{o.customer}</div>
+                </div>
+                <div className="font-bold shrink-0" style={{ color: T.brownDeep }}>{GHS(o.total)}</div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                <StatusBadge status={o.status} />
+                <StatusBadge status={o.paymentStatus} />
+              </div>
+              <div className="flex items-center justify-between mt-3 text-xs opacity-60" style={{ color: T.ink }}>
+                <span className="capitalize">{o.method}{o.area && o.area !== "—" ? ` · ${o.area}` : ""}</span>
+                <span>{timeAgo(o.createdAt)}</span>
+              </div>
+            </Card>
+          </button>
+        ))}
+      </div>
 
       <OrderDrawer order={activeOrder} onClose={() => setActiveId(null)} riders={riders} onChangeStatus={changeStatus} onAssignRider={assignRider} onVerifyPayment={verifyPayment} />
     </div>
@@ -917,6 +1037,7 @@ function RidersPage({ riders, addRider, toggleActive, orders }) {
    ============================================================ */
 function DeliveryPage({ zones, addZone, removeZone, updateZoneFee, toggleZone, settings, updateSettings }) {
   const [newZone, setNewZone] = useState({ name: "", fee: "" });
+  const [zoneToRemove, setZoneToRemove] = useState(null);
   const [feeEdits, setFeeEdits] = useState({}); // { [zoneId]: "12" } — local until blur
 
   const handleAddZone = () => {
@@ -951,7 +1072,7 @@ function DeliveryPage({ zones, addZone, removeZone, updateZoneFee, toggleZone, s
                 style={inputStyle}
               />
               <Toggle on={z.active} onChange={() => toggleZone(z.id)} />
-              <button onClick={() => removeZone(z.id)} className="p-1.5 rounded-lg" style={{ background: T.redSoft }}><Trash2 size={13} color={T.red} /></button>
+              <button onClick={() => setZoneToRemove(z)} aria-label={`Remove ${z.name}`} className="p-2 rounded-lg" style={{ background: T.redSoft }}><Trash2 size={14} color={T.red} /></button>
             </div>
           ))}
         </div>
@@ -988,6 +1109,14 @@ function DeliveryPage({ zones, addZone, removeZone, updateZoneFee, toggleZone, s
           </p>
         </div>
       </Card>
+      <ConfirmDialog
+        open={!!zoneToRemove}
+        title="Remove delivery area?"
+        message={zoneToRemove ? `Remove "${zoneToRemove.name}"? Customers will no longer be able to choose it. To pause it instead, close this and switch it off.` : ""}
+        confirmLabel="Remove"
+        onCancel={() => setZoneToRemove(null)}
+        onConfirm={() => { removeZone(zoneToRemove.id); setZoneToRemove(null); }}
+      />
     </div>
   );
 }

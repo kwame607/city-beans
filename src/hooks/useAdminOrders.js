@@ -83,7 +83,12 @@ export function useAdminOrders() {
       .on("postgres_changes", { event: "*", schema: "public", table: "payments" }, load)
       .subscribe();
 
+    // Safety net: if live updates aren't enabled for these tables in Supabase,
+    // re-check every 20 seconds so new orders and payments still show up.
+    const poll = setInterval(load, 20000);
+
     return () => {
+      clearInterval(poll);
       supabase.removeChannel(channel);
     };
   }, [load]);

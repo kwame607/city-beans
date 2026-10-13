@@ -40,6 +40,10 @@ const T = {
   sidebar: "#1B160D",
 };
 
+// An order saved when checkout started but not paid for yet (e.g. the customer
+// closed the payment window). Kept out of the main lists so they don't clutter.
+const isUnpaid = (o) => o.paymentStatus !== "PAID" && o.status === "PENDING";
+
 const GHS = (n) => `GH₵${Number(n).toFixed(2).replace(/\.00$/, "")}`;
 
 /* ============================================================
@@ -201,7 +205,6 @@ function useNewOrderAlerts(orders, loading) {
   const [unseen, setUnseen] = useState(0);
   const [banner, setBanner] = useState(null);
   const [muted, setMuted] = useState(readMuted);
-  const seen = useRef(new Set());
   const paidSeen = useRef(new Set());
   const ready = useRef(false);
   const audioCtx = useRef(null);
@@ -260,34 +263,21 @@ function useNewOrderAlerts(orders, loading) {
     } catch { /* sound is optional */ }
   }, []);
 
-  // Spot orders we haven't seen before. The first load only records what
-  // already exists, so opening the dashboard doesn't ring for old orders.
+  // Ring only when an order has actually been PAID. Orders that are saved
+  // but unpaid stay quiet. The first load just records what already exists,
+  // so opening the dashboard doesn't ring for old orders.
   useEffect(() => {
     if (loading) return;
     if (!ready.current) {
-      orders.forEach((o) => {
-        seen.current.add(o.id);
-        if (o.paymentStatus === "PAID") paidSeen.current.add(o.id);
-      });
+      orders.forEach((o) => { if (o.paymentStatus === "PAID") paidSeen.current.add(o.id); });
       ready.current = true;
       return;
     }
-    const fresh = orders.filter((o) => !seen.current.has(o.id));
-    fresh.forEach((o) => seen.current.add(o.id));
-
-    // An order we already knew about that has just been paid for
-    const justPaid = orders.filter(
-      (o) => o.paymentStatus === "PAID" && !paidSeen.current.has(o.id) && !fresh.includes(o)
-    );
-    orders.forEach((o) => { if (o.paymentStatus === "PAID") paidSeen.current.add(o.id); });
-
-    if (fresh.length === 0 && justPaid.length === 0) return;
-    if (fresh.length > 0) {
-      setUnseen((n) => n + fresh.length);
-      setBanner({ order: fresh[0], kind: "new" });
-    } else {
-      setBanner({ order: justPaid[0], kind: "paid" });
-    }
+    const justPaid = orders.filter((o) => o.paymentStatus === "PAID" && !paidSeen.current.has(o.id));
+    if (justPaid.length === 0) return;
+    justPaid.forEach((o) => paidSeen.current.add(o.id));
+    setUnseen((n) => n + justPaid.length);
+    setBanner({ order: justPaid[0], kind: "paid" });
     if (!mutedRef.current) beep();
   }, [orders, loading, beep]);
 
@@ -463,7 +453,8 @@ function DashboardPage({ orders, riders }) {
       period === "month" ? new Date(startOfDay.getTime() - 29 * DAY) :
       null;
 
-    const inPeriod = start ? orders.filter((o) => o.createdAt && new Date(o.createdAt) >= start) : orders;
+    const real = orders.filter((o) => !isUnpaid(o)); // unpaid checkouts are not real orders yet
+    const inPeriod = start ? real.filter((o) => o.createdAt && new Date(o.createdAt) >= start) : real;
     const paid = inPeriod.filter((o) => o.paymentStatus === "PAID");
     const revenue = paid.reduce((sum, o) => sum + o.total, 0);
 
@@ -473,8 +464,8 @@ function DashboardPage({ orders, riders }) {
       avg: paid.length ? revenue / paid.length : 0,
       completed: inPeriod.filter((o) => o.status === "DELIVERED").length,
       // "right now" numbers, not limited to the period
-      pending: orders.filter((o) => !["DELIVERED", "CANCELLED"].includes(o.status)).length,
-      active: orders.filter((o) => ["RIDER_ASSIGNED", "PICKED_UP", "OUT_FOR_DELIVERY"].includes(o.status)).length,
+      pending: real.filter((o) => !["DELIVERED", "CANCELLED"].includes(o.status)).length,
+      active: real.filter((o) => ["RIDER_ASSIGNED", "PICKED_UP", "OUT_FOR_DELIVERY"].includes(o.status)).length,
     };
   }, [orders, period]);
 
@@ -539,7 +530,7 @@ function DashboardPage({ orders, riders }) {
               </tr>
             </thead>
             <tbody>
-              {orders.slice(0, 6).map((o) => (
+              {orders.filter((o) => !isUnpaid(o)).slice(0, 6).map((o) => (
                 <tr key={o.id} style={{ borderTop: `1px solid rgba(90,70,48,0.08)` }}>
                   <td className="py-3 pr-4 font-bold" style={{ color: T.ink }}>{o.orderNumber}</td>
                   <td className="py-3 pr-4" style={{ color: T.ink }}>{o.customer}</td>
@@ -937,8 +928,15 @@ function OrdersPage({ query = "", orders, riders, changeStatus, assignRider, ver
   }, []);
 
   const q = query.trim().toLowerCase();
+  const unpaidCount = orders.filter(isUnpaid).length;
   const filtered = orders
-    .filter((o) => statusFilter === "all" || o.status === statusFilter)
+    .filter((o) => {
+      // While searching, look through everything so she can always find an order
+      if (q) return statusFilter === "all" || (statusFilter === "AWAITING" ? isUnpaid(o) : o.status === statusFilter);
+      if (statusFilter === "all") return !isUnpaid(o);
+      if (statusFilter === "AWAITING") return isUnpaid(o);
+      return o.status === statusFilter;
+    })
     .filter((o) =>
       !q ||
       [o.orderNumber, o.customer, o.phone, o.area, o.items]
@@ -948,10 +946,10 @@ function OrdersPage({ query = "", orders, riders, changeStatus, assignRider, ver
   return (
     <div className="p-5 md:p-8">
       <div className="flex gap-2 overflow-x-auto mb-5">
-        {["all", ...DELIVERY_STATUSES].map((s) => (
+        {["all", ...DELIVERY_STATUSES.filter((s) => s !== "PENDING"), "AWAITING"].map((s) => (
           <button key={s} onClick={() => setStatusFilter(s)} className="px-3.5 py-2 rounded-xl text-xs font-bold shrink-0"
             style={{ fontFamily: "'Baloo 2', sans-serif", background: statusFilter === s ? T.ink : T.surface, color: statusFilter === s ? T.surface : T.ink, border: `1.5px solid rgba(90,70,48,0.12)` }}>
-            {s === "all" ? "All" : s.replace(/_/g, " ")}
+            {s === "all" ? "All" : s === "AWAITING" ? `Awaiting payment${unpaidCount ? ` (${unpaidCount})` : ""}` : s.replace(/_/g, " ")}
           </button>
         ))}
       </div>
@@ -974,7 +972,7 @@ function OrdersPage({ query = "", orders, riders, changeStatus, assignRider, ver
             <tbody>
               {filtered.length === 0 && (
                 <tr><td colSpan={8} className="p-8 text-center text-sm opacity-60" style={{ color: T.ink }}>
-                  {q || statusFilter !== "all" ? "No orders match your search or filter." : "No orders yet."}
+                  {q || statusFilter !== "all" ? "No orders match your search or filter." : "No paid orders yet."}
                 </td></tr>
               )}
               {filtered.map((o) => (
@@ -1000,7 +998,7 @@ function OrdersPage({ query = "", orders, riders, changeStatus, assignRider, ver
       <div className="md:hidden flex flex-col gap-3">
         {filtered.length === 0 && (
           <div className="p-8 text-center text-sm opacity-60" style={{ color: T.ink }}>
-            {q || statusFilter !== "all" ? "No orders match your search or filter." : "No orders yet."}
+            {q || statusFilter !== "all" ? "No orders match your search or filter." : "No paid orders yet."}
           </div>
         )}
         {filtered.map((o) => (
@@ -1249,11 +1247,10 @@ export default function CityBeansAdmin() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="font-extrabold text-sm" style={{ fontFamily: "'Baloo 2', sans-serif" }}>
-                {alerts.banner.kind === "paid" ? "Payment received" : "New order"} {alerts.banner.order.orderNumber}
+                New paid order {alerts.banner.order.orderNumber}
               </div>
               <div className="text-xs opacity-80 mt-0.5 truncate">
                 {alerts.banner.order.customer || "Customer"} · {GHS(alerts.banner.order.total)} · {alerts.banner.order.method === "pickup" ? "Pickup" : "Delivery"}
-                {alerts.banner.kind === "new" && (alerts.banner.order.paymentStatus === "PAID" ? " · Paid" : " · Awaiting payment")}
               </div>
               <button
                 onClick={() => goTo("orders")}

@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useAuth } from "./AuthContext";
 import { useAdminOrders } from "../hooks/useAdminOrders";
 import { useAdminRiders } from "../hooks/useAdminRiders";
 import { useAdminProducts } from "../hooks/useAdminProducts";
@@ -7,7 +8,7 @@ import {
   LayoutGrid, Package, ClipboardList, Bike, Settings2, Search, Bell,
   Plus, Pencil, Trash2, X, ImagePlus, ChevronDown, Phone, MapPin,
   DollarSign, TrendingUp, Clock, CheckCircle2, Truck, Menu as MenuIcon,
-  ToggleLeft, ToggleRight, Eye, MoreHorizontal,
+  ToggleLeft, ToggleRight, Eye, MoreHorizontal, LogOut, Volume2, VolumeX,
 } from "lucide-react";
 
 /* ============================================================
@@ -175,7 +176,109 @@ const NAV_ITEMS = [
   { key: "delivery", label: "Delivery", icon: Settings2 },
 ];
 
-function Sidebar({ page, setPage, mobileOpen, setMobileOpen }) {
+/* ============================================================
+   NEW-ORDER ALERTS — sound + banner + unseen count
+   ============================================================ */
+const MUTE_KEY = "cb_admin_muted";
+
+function readMuted() {
+  try { return localStorage.getItem(MUTE_KEY) === "1"; } catch { return false; }
+}
+
+function useNewOrderAlerts(orders, loading) {
+  const [unseen, setUnseen] = useState(0);
+  const [banner, setBanner] = useState(null);
+  const [muted, setMuted] = useState(readMuted);
+  const seen = useRef(new Set());
+  const ready = useRef(false);
+  const audioCtx = useRef(null);
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
+
+  // Browsers only allow sound after the user has interacted with the page,
+  // so we prepare audio on the first tap/click/key press.
+  useEffect(() => {
+    const prime = () => {
+      try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        if (!audioCtx.current) audioCtx.current = new Ctx();
+        if (audioCtx.current.state === "suspended") audioCtx.current.resume();
+      } catch { /* sound is optional */ }
+    };
+    window.addEventListener("pointerdown", prime);
+    window.addEventListener("keydown", prime);
+    return () => {
+      window.removeEventListener("pointerdown", prime);
+      window.removeEventListener("keydown", prime);
+    };
+  }, []);
+
+  const beep = useCallback(() => {
+    try {
+      const ctx = audioCtx.current;
+      if (!ctx || ctx.state !== "running") return;
+      [0, 0.22].forEach((delay, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = i === 0 ? 880 : 1175;
+        const t = ctx.currentTime + delay;
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.22);
+      });
+    } catch { /* sound is optional */ }
+  }, []);
+
+  // Spot orders we haven't seen before. The first load only records what
+  // already exists, so opening the dashboard doesn't ring for old orders.
+  useEffect(() => {
+    if (loading) return;
+    if (!ready.current) {
+      orders.forEach((o) => seen.current.add(o.id));
+      ready.current = true;
+      return;
+    }
+    const fresh = orders.filter((o) => !seen.current.has(o.id));
+    if (fresh.length === 0) return;
+    fresh.forEach((o) => seen.current.add(o.id));
+    setUnseen((n) => n + fresh.length);
+    setBanner(fresh[0]);
+    if (!mutedRef.current) beep();
+  }, [orders, loading, beep]);
+
+  useEffect(() => {
+    if (!banner) return;
+    const t = setTimeout(() => setBanner(null), 10000);
+    return () => clearTimeout(t);
+  }, [banner]);
+
+  useEffect(() => {
+    const base = "City Beans Admin";
+    document.title = unseen > 0 ? `(${unseen}) New order${unseen > 1 ? "s" : ""} · ${base}` : base;
+    return () => { document.title = base; };
+  }, [unseen]);
+
+  const toggleMuted = () => {
+    setMuted((m) => {
+      const next = !m;
+      try { localStorage.setItem(MUTE_KEY, next ? "1" : "0"); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
+  return {
+    unseen, banner, muted, toggleMuted,
+    clear: () => { setUnseen(0); setBanner(null); },
+    dismissBanner: () => setBanner(null),
+  };
+}
+
+function Sidebar({ page, setPage, mobileOpen, setMobileOpen, unseen = 0 }) {
   const content = (
     <div className="h-full flex flex-col" style={{ background: T.sidebar }}>
       <div className="px-6 py-6">
@@ -196,6 +299,11 @@ function Sidebar({ page, setPage, mobileOpen, setMobileOpen }) {
           >
             <Icon size={18} />
             {label}
+            {key === "orders" && unseen > 0 && (
+              <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full flex items-center justify-center text-[11px] font-extrabold" style={{ background: T.orange, color: T.ink }}>
+                {unseen}
+              </span>
+            )}
           </button>
         ))}
       </nav>
@@ -219,24 +327,54 @@ function Sidebar({ page, setPage, mobileOpen, setMobileOpen }) {
   );
 }
 
-function Topbar({ title, setMobileOpen }) {
+function Topbar({ title, setMobileOpen, unseen, onBell, muted, onToggleMute, email, onSignOut }) {
+  const initial = (email || "A").trim().charAt(0).toUpperCase();
+  const iconBtn = { background: T.surface, border: `1.5px solid rgba(90,70,48,0.12)` };
+
   return (
-    <div className="sticky top-0 z-30 flex items-center justify-between gap-4 px-5 md:px-8 h-16" style={{ background: "rgba(251,247,236,0.9)", backdropFilter: "blur(10px)", borderBottom: `1.5px solid rgba(90,70,48,0.1)` }}>
-      <div className="flex items-center gap-3">
-        <button className="md:hidden p-1.5" onClick={() => setMobileOpen(true)}><MenuIcon size={20} color={T.ink} /></button>
-        <span className="font-extrabold text-xl" style={{ fontFamily: "'Baloo 2', sans-serif", color: T.ink }}>{title}</span>
+    <div className="sticky top-0 z-30 flex items-center justify-between gap-3 px-4 md:px-8 h-16" style={{ background: "rgba(251,247,236,0.9)", backdropFilter: "blur(10px)", borderBottom: `1.5px solid rgba(90,70,48,0.1)` }}>
+      <div className="flex items-center gap-3 min-w-0">
+        <button className="md:hidden p-1.5" onClick={() => setMobileOpen(true)} aria-label="Open menu"><MenuIcon size={20} color={T.ink} /></button>
+        <span className="font-extrabold text-xl truncate" style={{ fontFamily: "'Baloo 2', sans-serif", color: T.ink }}>{title}</span>
       </div>
-      <div className="flex items-center gap-3">
-        <div className="hidden sm:flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: T.surface, border: `1.5px solid rgba(90,70,48,0.12)` }}>
+      <div className="flex items-center gap-2 sm:gap-3">
+        <div className="hidden lg:flex items-center gap-2 rounded-xl px-3 py-2" style={iconBtn}>
           <Search size={15} color={T.ink} style={{ opacity: 0.5 }} />
           <input placeholder="Search orders, products…" className="text-sm outline-none bg-transparent w-44" style={{ color: T.ink }} />
         </div>
-        <button className="relative p-2 rounded-xl" style={{ background: T.surface, border: `1.5px solid rgba(90,70,48,0.12)` }}>
-          <Bell size={16} color={T.ink} />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full" style={{ background: T.orange }} />
+        <button
+          onClick={onToggleMute}
+          className="p-2 rounded-xl"
+          style={iconBtn}
+          aria-label={muted ? "Turn order sound on" : "Turn order sound off"}
+          title={muted ? "Order sound is off" : "Order sound is on"}
+        >
+          {muted ? <VolumeX size={16} color={T.ink} style={{ opacity: 0.5 }} /> : <Volume2 size={16} color={T.ink} />}
         </button>
-        <div className="w-9 h-9 rounded-full flex items-center justify-center font-extrabold text-sm" style={{ background: T.green, color: T.surface, fontFamily: "'Baloo 2', sans-serif" }}>
-          A
+        <button
+          onClick={onBell}
+          className="relative p-2 rounded-xl"
+          style={iconBtn}
+          aria-label={unseen > 0 ? `${unseen} new order${unseen > 1 ? "s" : ""}` : "Notifications"}
+        >
+          <Bell size={16} color={T.ink} />
+          {unseen > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-extrabold" style={{ background: T.orange, color: T.ink }}>
+              {unseen}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={onSignOut}
+          className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold"
+          style={{ ...iconBtn, color: T.ink, fontFamily: "'Baloo 2', sans-serif" }}
+          title={email ? `Signed in as ${email}` : "Sign out"}
+        >
+          <LogOut size={16} />
+          <span className="hidden sm:inline">Sign out</span>
+        </button>
+        <div className="hidden sm:flex w-9 h-9 rounded-full items-center justify-center font-extrabold text-sm" style={{ background: T.green, color: T.surface, fontFamily: "'Baloo 2', sans-serif" }} aria-hidden="true">
+          {initial}
         </div>
       </div>
     </div>
@@ -826,12 +964,65 @@ export default function CityBeansAdmin() {
 
   const titles = { dashboard: "Dashboard", products: "Products", orders: "Orders", riders: "Riders", delivery: "Delivery settings" };
 
+  const { session, signOut } = useAuth();
+  const alerts = useNewOrderAlerts(orders, ordersLoading);
+
+  const goTo = (key) => {
+    setPage(key);
+    if (key === "orders") alerts.clear();
+  };
+
+  // If she is already looking at Orders, new ones count as seen.
+  useEffect(() => {
+    if (page === "orders" && alerts.unseen > 0) alerts.clear();
+  }, [page, alerts.unseen, alerts]);
+
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", background: T.paper, minHeight: "100%" }} className="flex">
       <style>{FONTS}</style>
-      <Sidebar page={page} setPage={setPage} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
+      <Sidebar page={page} setPage={goTo} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} unseen={alerts.unseen} />
       <div className="flex-1 min-w-0">
-        <Topbar title={titles[page]} setMobileOpen={setMobileOpen} />
+        <Topbar
+          title={titles[page]}
+          setMobileOpen={setMobileOpen}
+          unseen={alerts.unseen}
+          onBell={() => goTo("orders")}
+          muted={alerts.muted}
+          onToggleMute={alerts.toggleMuted}
+          email={session?.user?.email}
+          onSignOut={signOut}
+        />
+
+        {alerts.banner && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="fixed top-20 right-4 left-4 sm:left-auto sm:w-96 z-40 rounded-2xl p-4 flex items-start gap-3 shadow-xl"
+            style={{ background: T.ink, color: T.cream }}
+          >
+            <div className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center" style={{ background: T.orange, color: T.ink }}>
+              <Bell size={17} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-extrabold text-sm" style={{ fontFamily: "'Baloo 2', sans-serif" }}>
+                New order {alerts.banner.orderNumber}
+              </div>
+              <div className="text-xs opacity-80 mt-0.5 truncate">
+                {alerts.banner.customer || "Customer"} · {GHS(alerts.banner.total)} · {alerts.banner.method === "pickup" ? "Pickup" : "Delivery"}
+              </div>
+              <button
+                onClick={() => goTo("orders")}
+                className="mt-2 text-xs font-bold underline"
+                style={{ color: T.orange }}
+              >
+                View orders
+              </button>
+            </div>
+            <button onClick={alerts.dismissBanner} aria-label="Dismiss" className="shrink-0 p-1 opacity-70 hover:opacity-100">
+              <X size={16} />
+            </button>
+          </div>
+        )}
 
         {page === "dashboard" && <DashboardPage orders={orders} riders={riders} />}
 

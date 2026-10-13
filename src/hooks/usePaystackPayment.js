@@ -1,5 +1,5 @@
 // src/hooks/usePaystackPayment.js
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
 function loadPaystackScript() {
@@ -34,6 +34,7 @@ export function usePaystackPayment() {
   const [phase, setPhase] = useState("idle");
   const [confirmedOrder, setConfirmedOrder] = useState(null);
   const [error, setError] = useState("");
+  const lastOrder = useRef(null); // so "check again" knows which order to look up
 
   async function poll(orderNumber, phone, attempt) {
     const { data } = await supabase.rpc("get_order_status", {
@@ -58,6 +59,7 @@ export function usePaystackPayment() {
   async function payForOrder({ orderId, orderNumber, phone, email }) {
     setPhase("opening");
     setError("");
+    lastOrder.current = { orderNumber, phone };
 
     const { data: initData, error: initError } = await supabase.rpc("init_payment", {
       p_order_id: orderId,
@@ -98,11 +100,19 @@ export function usePaystackPayment() {
     }).openIframe();
   }
 
+  // For the "still confirming" screen: ask the database again, same as the
+  // automatic check. It never trusts the browser — only the saved order status.
+  function recheck() {
+    if (!lastOrder.current) return;
+    setPhase("confirming");
+    poll(lastOrder.current.orderNumber, lastOrder.current.phone, 0);
+  }
+
   function reset() {
     setPhase("idle");
     setConfirmedOrder(null);
     setError("");
   }
 
-  return { phase, confirmedOrder, error, payForOrder, reset };
+  return { phase, confirmedOrder, error, payForOrder, recheck, reset };
 }

@@ -1836,7 +1836,7 @@ function CheckoutPage({
   const [zoneId, setZoneId] = useState("");
   const { zones, loading: zonesLoading } = useDeliveryZones();
   const { createOrder, submitting, error: orderError } = useCreateOrder();
-  const { phase, error: paymentError, payForOrder } = usePaystackPayment();
+  const { phase, error: paymentError, payForOrder, recheck } = usePaystackPayment();
 
   const [orderResult, setOrderResult] = useState(null); // from create_order — has subtotal/fee/total for the receipt
   const [receiptItems, setReceiptItems] = useState([]);
@@ -1933,9 +1933,12 @@ function CheckoutPage({
               This is taking longer than usual. Your order {orderResult.order_number} is saved —
               check Track Order in a moment, or contact us if it doesn't update.
             </p>
-            <Button className="mt-6" onClick={() => setPage({ name: "track", orderNumber: orderResult.order_number, phone: form.phone })}>
-              TRACK THIS ORDER
-            </Button>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Button onClick={recheck}>CHECK AGAIN</Button>
+              <Button variant="light" onClick={() => setPage({ name: "track", orderNumber: orderResult.order_number, phone: form.phone })}>
+                TRACK THIS ORDER
+              </Button>
+            </div>
           </>
         )}
 

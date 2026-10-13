@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useAuth } from "./AuthContext";
-import { useAdminOrders } from "../hooks/useAdminOrders";
+import { useAdminOrders, timeAgo } from "../hooks/useAdminOrders";
 import { useAdminRiders } from "../hooks/useAdminRiders";
 import { useAdminProducts } from "../hooks/useAdminProducts";
 import { useAdminDelivery } from "../hooks/useAdminDelivery";
@@ -190,6 +190,7 @@ function useNewOrderAlerts(orders, loading) {
   const [banner, setBanner] = useState(null);
   const [muted, setMuted] = useState(readMuted);
   const seen = useRef(new Set());
+  const paidSeen = useRef(new Set());
   const ready = useRef(false);
   const audioCtx = useRef(null);
   const mutedRef = useRef(muted);
@@ -239,15 +240,29 @@ function useNewOrderAlerts(orders, loading) {
   useEffect(() => {
     if (loading) return;
     if (!ready.current) {
-      orders.forEach((o) => seen.current.add(o.id));
+      orders.forEach((o) => {
+        seen.current.add(o.id);
+        if (o.paymentStatus === "PAID") paidSeen.current.add(o.id);
+      });
       ready.current = true;
       return;
     }
     const fresh = orders.filter((o) => !seen.current.has(o.id));
-    if (fresh.length === 0) return;
     fresh.forEach((o) => seen.current.add(o.id));
-    setUnseen((n) => n + fresh.length);
-    setBanner(fresh[0]);
+
+    // An order we already knew about that has just been paid for
+    const justPaid = orders.filter(
+      (o) => o.paymentStatus === "PAID" && !paidSeen.current.has(o.id) && !fresh.includes(o)
+    );
+    orders.forEach((o) => { if (o.paymentStatus === "PAID") paidSeen.current.add(o.id); });
+
+    if (fresh.length === 0 && justPaid.length === 0) return;
+    if (fresh.length > 0) {
+      setUnseen((n) => n + fresh.length);
+      setBanner({ order: fresh[0], kind: "new" });
+    } else {
+      setBanner({ order: justPaid[0], kind: "paid" });
+    }
     if (!mutedRef.current) beep();
   }, [orders, loading, beep]);
 
@@ -327,7 +342,7 @@ function Sidebar({ page, setPage, mobileOpen, setMobileOpen, unseen = 0 }) {
   );
 }
 
-function Topbar({ title, setMobileOpen, unseen, onBell, muted, onToggleMute, email, onSignOut }) {
+function Topbar({ title, setMobileOpen, unseen, onBell, muted, onToggleMute, email, onSignOut, query, onQuery, searchPlaceholder }) {
   const initial = (email || "A").trim().charAt(0).toUpperCase();
   const iconBtn = { background: T.surface, border: `1.5px solid rgba(90,70,48,0.12)` };
 
@@ -338,9 +353,17 @@ function Topbar({ title, setMobileOpen, unseen, onBell, muted, onToggleMute, ema
         <span className="font-extrabold text-xl truncate" style={{ fontFamily: "'Baloo 2', sans-serif", color: T.ink }}>{title}</span>
       </div>
       <div className="flex items-center gap-2 sm:gap-3">
-        <div className="hidden lg:flex items-center gap-2 rounded-xl px-3 py-2" style={iconBtn}>
+        <div className="hidden md:flex items-center gap-2 rounded-xl px-3 py-2" style={iconBtn}>
           <Search size={15} color={T.ink} style={{ opacity: 0.5 }} />
-          <input placeholder="Search orders, products…" className="text-sm outline-none bg-transparent w-44" style={{ color: T.ink }} />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => onQuery(e.target.value)}
+            placeholder={searchPlaceholder}
+            aria-label="Search"
+            className="text-sm outline-none bg-transparent w-36 lg:w-52"
+            style={{ color: T.ink }}
+          />
         </div>
         <button
           onClick={onToggleMute}
@@ -387,7 +410,8 @@ function Topbar({ title, setMobileOpen, unseen, onBell, muted, onToggleMute, ema
 function DashboardPage({ orders, riders }) {
   const stats = useMemo(() => {
     const total = orders.length;
-    const today = orders.length; // mock: all "today"
+    const todayStr = new Date().toDateString();
+    const today = orders.filter((o) => o.createdAt && new Date(o.createdAt).toDateString() === todayStr).length;
     const pending = orders.filter((o) => !["DELIVERED", "CANCELLED"].includes(o.status)).length;
     const completed = orders.filter((o) => o.status === "DELIVERED").length;
     const revenue = orders.filter((o) => o.paymentStatus === "PAID").reduce((s, o) => s + o.total, 0);
@@ -579,7 +603,7 @@ function ProductModal({ open, onClose, product, extrasMaster, uploadProductImage
   );
 }
 
-function ProductsPage({ products, extrasMaster, addProduct, updateProduct, deleteProduct, toggleAvailable, uploadProductImage }) {
+function ProductsPage({ query = "", products, extrasMaster, addProduct, updateProduct, deleteProduct, toggleAvailable, uploadProductImage }) {
   const [editing, setEditing] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [filter, setFilter] = useState("all");
@@ -596,7 +620,10 @@ function ProductsPage({ products, extrasMaster, addProduct, updateProduct, delet
     setModalOpen(false);
   };
 
-  const filtered = filter === "all" ? products : products.filter((p) => p.category === filter);
+  const q = query.trim().toLowerCase();
+  const filtered = products
+    .filter((p) => filter === "all" || p.category === filter)
+    .filter((p) => !q || p.name.toLowerCase().includes(q));
 
   return (
     <div className="p-5 md:p-8">
@@ -627,6 +654,11 @@ function ProductsPage({ products, extrasMaster, addProduct, updateProduct, delet
               </tr>
             </thead>
             <tbody>
+              {filtered.length === 0 && (
+                <tr><td colSpan={7} className="p-8 text-center text-sm opacity-60" style={{ color: T.ink }}>
+                  No products match your search or filter.
+                </td></tr>
+              )}
               {filtered.map((p) => (
                 <tr key={p.id} style={{ borderTop: `1px solid rgba(90,70,48,0.08)` }}>
                   <td className="p-4">
@@ -749,13 +781,27 @@ function OrderDrawer({ order, onClose, riders, onChangeStatus, onAssignRider, on
   );
 }
 
-function OrdersPage({ orders, riders, changeStatus, assignRider, verifyPayment }) {
+function OrdersPage({ query = "", orders, riders, changeStatus, assignRider, verifyPayment }) {
   const [activeId, setActiveId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
 
   const activeOrder = orders.find((o) => o.id === activeId) || null;
 
-  const filtered = statusFilter === "all" ? orders : orders.filter((o) => o.status === statusFilter);
+  // re-render every minute so "5 min ago" stays true
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setTick((n) => n + 1), 60000);
+    return () => clearInterval(t);
+  }, []);
+
+  const q = query.trim().toLowerCase();
+  const filtered = orders
+    .filter((o) => statusFilter === "all" || o.status === statusFilter)
+    .filter((o) =>
+      !q ||
+      [o.orderNumber, o.customer, o.phone, o.area, o.items]
+        .some((v) => (v || "").toLowerCase().includes(q))
+    );
 
   return (
     <div className="p-5 md:p-8">
@@ -784,6 +830,11 @@ function OrdersPage({ orders, riders, changeStatus, assignRider, verifyPayment }
               </tr>
             </thead>
             <tbody>
+              {filtered.length === 0 && (
+                <tr><td colSpan={8} className="p-8 text-center text-sm opacity-60" style={{ color: T.ink }}>
+                  {q || statusFilter !== "all" ? "No orders match your search or filter." : "No orders yet."}
+                </td></tr>
+              )}
               {filtered.map((o) => (
                 <tr key={o.id} style={{ borderTop: `1px solid rgba(90,70,48,0.08)` }}>
                   <td className="p-4 font-bold" style={{ color: T.ink }}>{o.orderNumber}</td>
@@ -792,7 +843,7 @@ function OrdersPage({ orders, riders, changeStatus, assignRider, verifyPayment }
                   <td className="p-4 font-bold" style={{ color: T.brownDeep }}>{GHS(o.total)}</td>
                   <td className="p-4"><StatusBadge status={o.paymentStatus} /></td>
                   <td className="p-4"><StatusBadge status={o.status} /></td>
-                  <td className="p-4 opacity-50 text-xs" style={{ color: T.ink }}>{o.placedAt}</td>
+                  <td className="p-4 opacity-50 text-xs" style={{ color: T.ink }}>{timeAgo(o.createdAt)}</td>
                   <td className="p-4 text-right">
                     <button onClick={() => setActiveId(o.id)} className="p-2 rounded-lg" style={{ background: T.paper }}><Eye size={14} color={T.ink} /></button>
                   </td>
@@ -946,6 +997,7 @@ function DeliveryPage({ zones, addZone, removeZone, updateZoneFee, toggleZone, s
    ============================================================ */
 export default function CityBeansAdmin() {
   const [page, setPage] = useState("dashboard");
+  const [query, setQuery] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const {
@@ -966,6 +1018,12 @@ export default function CityBeansAdmin() {
 
   const { session, signOut } = useAuth();
   const alerts = useNewOrderAlerts(orders, ordersLoading);
+
+  // Typing in the search box takes her to the page that can use it
+  const onSearch = (value) => {
+    setQuery(value);
+    if (value && page !== "orders" && page !== "products") setPage("orders");
+  };
 
   const goTo = (key) => {
     setPage(key);
@@ -991,6 +1049,9 @@ export default function CityBeansAdmin() {
           onToggleMute={alerts.toggleMuted}
           email={session?.user?.email}
           onSignOut={signOut}
+          query={query}
+          onQuery={onSearch}
+          searchPlaceholder={page === "products" ? "Search products…" : "Search orders…"}
         />
 
         {alerts.banner && (
@@ -1005,10 +1066,11 @@ export default function CityBeansAdmin() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="font-extrabold text-sm" style={{ fontFamily: "'Baloo 2', sans-serif" }}>
-                New order {alerts.banner.orderNumber}
+                {alerts.banner.kind === "paid" ? "Payment received" : "New order"} {alerts.banner.order.orderNumber}
               </div>
               <div className="text-xs opacity-80 mt-0.5 truncate">
-                {alerts.banner.customer || "Customer"} · {GHS(alerts.banner.total)} · {alerts.banner.method === "pickup" ? "Pickup" : "Delivery"}
+                {alerts.banner.order.customer || "Customer"} · {GHS(alerts.banner.order.total)} · {alerts.banner.order.method === "pickup" ? "Pickup" : "Delivery"}
+                {alerts.banner.kind === "new" && (alerts.banner.order.paymentStatus === "PAID" ? " · Paid" : " · Awaiting payment")}
               </div>
               <button
                 onClick={() => goTo("orders")}
@@ -1029,13 +1091,13 @@ export default function CityBeansAdmin() {
         {page === "products" && (
           productsLoading
             ? <div className="p-8 text-sm opacity-60" style={{ color: T.ink }}>Loading products…</div>
-            : <ProductsPage products={products} extrasMaster={extrasMaster} addProduct={addProduct} updateProduct={updateProduct} deleteProduct={deleteProduct} toggleAvailable={toggleAvailable} uploadProductImage={uploadProductImage} />
+            : <ProductsPage query={query} products={products} extrasMaster={extrasMaster} addProduct={addProduct} updateProduct={updateProduct} deleteProduct={deleteProduct} toggleAvailable={toggleAvailable} uploadProductImage={uploadProductImage} />
         )}
 
         {page === "orders" && (
           ordersLoading
             ? <div className="p-8 text-sm opacity-60" style={{ color: T.ink }}>Loading orders…</div>
-            : <OrdersPage orders={orders} riders={riders} changeStatus={changeStatus} assignRider={assignRider} verifyPayment={verifyPayment} />
+            : <OrdersPage query={query} orders={orders} riders={riders} changeStatus={changeStatus} assignRider={assignRider} verifyPayment={verifyPayment} />
         )}
 
         {page === "riders" && (

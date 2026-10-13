@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
-function timeAgo(iso) {
+export function timeAgo(iso) {
   const diffMs = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diffMs / 60000);
   if (mins < 1) return "just now";
@@ -38,7 +38,7 @@ function shapeOrder(o) {
     paymentReference: payment?.reference || null,
     status: o.status,
     riderId: delivery?.rider_id || null,
-    placedAt: timeAgo(o.created_at),
+    createdAt: o.created_at, // ISO string — 'placed x min ago' is computed when shown
   };
 }
 

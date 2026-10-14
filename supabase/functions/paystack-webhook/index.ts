@@ -20,6 +20,14 @@ async function hmacSha512Hex(secret: string, message: string): Promise<string> {
     .join("");
 }
 
+// Constant-time string compare so response timing can't leak the signature.
+function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
@@ -35,11 +43,16 @@ Deno.serve(async (req) => {
   // Confirm this request actually came from Paystack before doing
   // anything else — anyone can POST to this URL otherwise.
   const expectedSignature = await hmacSha512Hex(paystackSecret, rawBody);
-  if (expectedSignature !== signature) {
+  if (!safeEqual(expectedSignature, signature)) {
     return new Response("Invalid signature", { status: 401 });
   }
 
-  const event = JSON.parse(rawBody);
+  let event;
+  try {
+    event = JSON.parse(rawBody);
+  } catch {
+    return new Response("bad json", { status: 400 });
+  }
 
   if (event.event !== "charge.success") {
     return new Response("ignored", { status: 200 });
@@ -53,7 +66,7 @@ Deno.serve(async (req) => {
   // Never trust the webhook body's own claim of success — re-verify
   // directly with Paystack's API using the secret key.
   const verifyRes = await fetch(
-    `https://api.paystack.co/transaction/verify/${reference}`,
+    `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
     { headers: { Authorization: `Bearer ${paystackSecret}` } }
   );
   const verifyJson = await verifyRes.json();
@@ -63,6 +76,9 @@ Deno.serve(async (req) => {
   }
 
   const amountPesewas = verifyJson.data.amount;
+  if (verifyJson.data.currency !== "GHS") {
+    return new Response("wrong currency", { status: 400 });
+  }
 
   const sbHeaders = {
     "Content-Type": "application/json",
@@ -71,7 +87,7 @@ Deno.serve(async (req) => {
   };
 
   const paymentRes = await fetch(
-    `${supabaseUrl}/rest/v1/payments?reference=eq.${reference}&select=id,order_id,amount,status`,
+    `${supabaseUrl}/rest/v1/payments?reference=eq.${encodeURIComponent(reference)}&select=id,order_id,amount,status`,
     { headers: sbHeaders }
   );
   const payments = await paymentRes.json();

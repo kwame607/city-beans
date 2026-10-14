@@ -1032,11 +1032,13 @@ function OrdersPage({ query = "", orders, riders, changeStatus, assignRider, ver
 /* ============================================================
    RIDERS PAGE
    ============================================================ */
-function RiderModal({ open, onClose, onSave }) {
+function RiderModal({ open, rider, onClose, onSave }) {
   const [form, setForm] = useState({ name: "", phone: "" });
-  React.useEffect(() => { if (open) setForm({ name: "", phone: "" }); }, [open]);
+  React.useEffect(() => {
+    if (open) setForm({ name: rider?.name || "", phone: rider?.phone || "" });
+  }, [open, rider]);
   return (
-    <Modal open={open} onClose={onClose} title="Add rider">
+    <Modal open={open} onClose={onClose} title={rider ? "Edit rider" : "Add rider"}>
       <div className="flex flex-col gap-4">
         <FormField label="Full name">
           <input className="rounded-xl px-3 py-2.5 text-sm outline-none" style={inputStyle} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -1044,40 +1046,71 @@ function RiderModal({ open, onClose, onSave }) {
         <FormField label="Phone number">
           <input className="rounded-xl px-3 py-2.5 text-sm outline-none" style={inputStyle} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="024 XXX XXXX" />
         </FormField>
-        <Button onClick={() => { onSave(form); onClose(); }} disabled={!form.name.trim() || !form.phone.trim()}>Add rider</Button>
+        <Button onClick={() => { onSave(form); onClose(); }} disabled={!form.name.trim() || !form.phone.trim()}>{rider ? "Save changes" : "Add rider"}</Button>
       </div>
     </Modal>
   );
 }
 
-function RidersPage({ riders, addRider, toggleActive, orders }) {
+function RidersPage({ riders, addRider, updateRider, deleteRider, toggleActive, orders }) {
   const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [toDelete, setToDelete] = useState(null);
+  const [notice, setNotice] = useState("");
   const deliveriesFor = (id) => orders.filter((o) => o.riderId === id && !["DELIVERED", "CANCELLED"].includes(o.status)).length;
+
+  const openAdd = () => { setEditing(null); setModalOpen(true); };
+  const openEdit = (r) => { setEditing(r); setModalOpen(true); };
+  const save = (form) => (editing ? updateRider(editing.id, form) : addRider(form));
+  const confirmDelete = async () => {
+    const r = toDelete;
+    setToDelete(null);
+    const { error } = await deleteRider(r.id);
+    setNotice(error
+      ? `${r.name} can't be deleted because past orders use this rider. Switch them off instead and they won't appear for new orders.`
+      : "");
+  };
 
   return (
     <div className="p-5 md:p-8">
       <div className="flex items-center justify-between mb-5">
         <span className="opacity-60 text-sm" style={{ color: T.ink }}>{riders.filter((r) => r.active).length} active riders</span>
-        <Button icon={Plus} onClick={() => setModalOpen(true)}>Add rider</Button>
+        <Button icon={Plus} onClick={openAdd}>Add rider</Button>
       </div>
+      {notice && (
+        <div role="alert" className="mb-4 rounded-xl px-4 py-3 text-sm" style={{ background: T.redSoft, color: T.red }}>{notice}</div>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {riders.map((r) => (
           <Card key={r.id} className="p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="font-extrabold" style={{ fontFamily: "'Baloo 2', sans-serif", color: T.ink }}>{r.name}</div>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-extrabold truncate" style={{ fontFamily: "'Baloo 2', sans-serif", color: T.ink }}>{r.name}</div>
                 <a href={`tel:${r.phone.replace(/\s/g, "")}`} className="text-sm flex items-center gap-1.5 mt-1 opacity-70" style={{ color: T.ink }}><Phone size={13} /> {r.phone}</a>
               </div>
-              <StatusBadge status={r.active ? "CONFIRMED" : "CANCELLED"} />
+              <div className="flex gap-2 shrink-0">
+                <button onClick={() => openEdit(r)} aria-label={`Edit ${r.name}`} className="p-2 rounded-lg" style={{ background: T.paper }}><Pencil size={14} color={T.ink} /></button>
+                <button onClick={() => setToDelete(r)} aria-label={`Delete ${r.name}`} className="p-2 rounded-lg" style={{ background: T.redSoft }}><Trash2 size={14} color={T.red} /></button>
+              </div>
             </div>
             <div className="mt-4 flex items-center justify-between">
-              <span className="text-xs opacity-60" style={{ color: T.ink }}>{deliveriesFor(r.id)} active deliveries</span>
+              <div className="flex items-center gap-2">
+                <StatusBadge status={r.active ? "CONFIRMED" : "CANCELLED"} />
+                <span className="text-xs opacity-60" style={{ color: T.ink }}>{deliveriesFor(r.id)} active deliveries</span>
+              </div>
               <Toggle on={r.active} onChange={() => toggleActive(r.id)} />
             </div>
           </Card>
         ))}
       </div>
-      <RiderModal open={modalOpen} onClose={() => setModalOpen(false)} onSave={addRider} />
+      <RiderModal open={modalOpen} rider={editing} onClose={() => setModalOpen(false)} onSave={save} />
+      <ConfirmDialog
+        open={!!toDelete}
+        title="Delete rider?"
+        message={toDelete ? `Delete ${toDelete.name}? This can't be undone. If they have past deliveries, switch them off instead.` : ""}
+        onConfirm={confirmDelete}
+        onCancel={() => setToDelete(null)}
+      />
     </div>
   );
 }
@@ -1186,7 +1219,7 @@ export default function CityBeansAdmin() {
 
   const { orders, loading: ordersLoading, changeStatus, assignRider, verifyPayment } = useAdminOrders();
 
-  const { riders, loading: ridersLoading, addRider, toggleActive } = useAdminRiders();
+  const { riders, loading: ridersLoading, addRider, updateRider, deleteRider, toggleActive } = useAdminRiders();
 
   const {
     zones, settings, loading: deliveryLoading,
@@ -1283,7 +1316,7 @@ export default function CityBeansAdmin() {
         {page === "riders" && (
           ridersLoading
             ? <div className="p-8 text-sm opacity-60" style={{ color: T.ink }}>Loading riders…</div>
-            : <RidersPage riders={riders} addRider={addRider} toggleActive={toggleActive} orders={orders} />
+            : <RidersPage riders={riders} addRider={addRider} updateRider={updateRider} deleteRider={deleteRider} toggleActive={toggleActive} orders={orders} />
         )}
 
         {page === "delivery" && (

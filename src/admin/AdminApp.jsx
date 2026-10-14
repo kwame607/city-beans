@@ -15,7 +15,7 @@ import {
    DESIGN TOKENS — same system as the storefront
    ============================================================ */
 const FONTS = `
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 `;
 
 const T = {
@@ -77,7 +77,7 @@ function StatusBadge({ status }) {
   return (
     <span
       className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide"
-      style={{ background: c.bg, color: c.fg, fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+      style={{ background: c.bg, color: c.fg, fontFamily: "'Baloo 2', sans-serif" }}
     >
       {status.replace(/_/g, " ")}
     </span>
@@ -102,7 +102,7 @@ function Button({ children, onClick, variant = "primary", className = "", icon: 
     ghost: { background: "transparent", color: T.ink },
   };
   return (
-    <button onClick={onClick} disabled={disabled} className={`${base} ${className}`} style={{ ...variants[variant], fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+    <button onClick={onClick} disabled={disabled} className={`${base} ${className}`} style={{ ...variants[variant], fontFamily: "'Baloo 2', sans-serif" }}>
       {Icon && <Icon size={16} strokeWidth={2.5} />}
       {children}
     </button>
@@ -140,7 +140,7 @@ function Modal({ open, onClose, title, children, wide }) {
       <div className={`relative w-full ${wide ? "sm:max-w-2xl" : "sm:max-w-md"} max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl`}
         style={{ background: T.paper, boxShadow: "0 30px 60px -20px rgba(0,0,0,0.4)" }}>
         <div className="sticky top-0 flex items-center justify-between px-6 py-4" style={{ background: T.paper, borderBottom: `1.5px solid rgba(90,70,48,0.12)` }}>
-          <span className="font-extrabold text-lg" style={{ fontFamily: "'Fraunces', Georgia, serif", color: T.ink }}>{title}</span>
+          <span className="font-extrabold text-lg" style={{ fontFamily: "'Baloo 2', sans-serif", color: T.ink }}>{title}</span>
           <button onClick={onClose} className="p-1.5 rounded-full" style={{ background: T.surface }}><X size={18} color={T.ink} /></button>
         </div>
         <div className="p-6">{children}</div>
@@ -173,7 +173,7 @@ function Logo({ variant = "dark", size = 30 }) {
         <path d="M28 14c-7.5 0-13.5 4.5-13.5 10s6 10 13.5 10" stroke={ring} strokeWidth="2.5" strokeLinecap="round" fill="none" />
         <path d="M20.5 19c2.8 0 5 1.6 5 4s-2.2 4-5 4c-1.6 0-2.4-1-2.4-2.3 0-1 .6-1.6 1.5-2 .9-.4 1.5-1 1.5-1.9 0-1-.7-1.8-1.6-1.8" stroke={bean} strokeWidth="2" strokeLinecap="round" fill="none" />
       </svg>
-      <span style={{ fontFamily: "'Fraunces', Georgia, serif" }} className="text-lg leading-none tracking-wide">
+      <span style={{ fontFamily: "'Baloo 2', sans-serif" }} className="text-lg leading-none tracking-wide">
         <span style={{ color: wordCity, fontWeight: 600 }}>CITY </span>
         <span style={{ color: wordBeans, fontWeight: 700 }}>BEANS</span>
       </span>
@@ -328,7 +328,7 @@ function Sidebar({ page, setPage, mobileOpen, setMobileOpen, unseen = 0 }) {
             onClick={() => { setPage(key); setMobileOpen(false); }}
             className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors"
             style={{
-              fontFamily: "'Fraunces', Georgia, serif",
+              fontFamily: "'Baloo 2', sans-serif",
               background: page === key ? "rgba(232,151,59,0.16)" : "transparent",
               color: page === key ? T.orange : "rgba(245,234,198,0.75)",
             }}
@@ -371,7 +371,7 @@ function Topbar({ title, setMobileOpen, unseen, onBell, muted, onToggleMute, sou
     <div className="sticky top-0 z-30 flex items-center justify-between gap-3 px-4 md:px-8 h-16" style={{ background: "rgba(251,247,236,0.9)", backdropFilter: "blur(10px)", borderBottom: `1.5px solid rgba(90,70,48,0.1)` }}>
       <div className="flex items-center gap-3 min-w-0">
         <button className="md:hidden p-1.5" onClick={() => setMobileOpen(true)} aria-label="Open menu"><MenuIcon size={20} color={T.ink} /></button>
-        <span className="font-extrabold text-xl truncate" style={{ fontFamily: "'Fraunces', Georgia, serif", color: T.ink }}>{title}</span>
+        <span className="font-extrabold text-xl truncate" style={{ fontFamily: "'Baloo 2', sans-serif", color: T.ink }}>{title}</span>
       </div>
       <div className="flex items-center gap-2 sm:gap-3">
         <div className="hidden md:flex items-center gap-2 rounded-xl px-3 py-2" style={iconBtn}>
@@ -390,7 +390,7 @@ function Topbar({ title, setMobileOpen, unseen, onBell, muted, onToggleMute, sou
           <button
             onClick={onTestSound}
             className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
-            style={{ background: T.orangeSoft, border: `1.5px solid ${T.orange}`, color: T.orangeDeep, fontFamily: "'Fraunces', Georgia, serif" }}
+            style={{ background: T.orangeSoft, border: `1.5px solid ${T.orange}`, color: T.orangeDeep, fontFamily: "'Baloo 2', sans-serif" }}
             title="Your browser is blocking sound until you tap here"
           >
             <VolumeX size={16} />
@@ -423,13 +423,13 @@ function Topbar({ title, setMobileOpen, unseen, onBell, muted, onToggleMute, sou
         <button
           onClick={onSignOut}
           className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold"
-          style={{ ...iconBtn, color: T.ink, fontFamily: "'Fraunces', Georgia, serif" }}
+          style={{ ...iconBtn, color: T.ink, fontFamily: "'Baloo 2', sans-serif" }}
           title={email ? `Signed in as ${email}` : "Sign out"}
         >
           <LogOut size={16} />
           <span className="hidden sm:inline">Sign out</span>
         </button>
-        <div className="hidden sm:flex w-9 h-9 rounded-full items-center justify-center font-extrabold text-sm" style={{ background: T.green, color: T.surface, fontFamily: "'Fraunces', Georgia, serif" }} aria-hidden="true">
+        <div className="hidden sm:flex w-9 h-9 rounded-full items-center justify-center font-extrabold text-sm" style={{ background: T.green, color: T.surface, fontFamily: "'Baloo 2', sans-serif" }} aria-hidden="true">
           {initial}
         </div>
       </div>
@@ -494,7 +494,7 @@ function DashboardPage({ orders, riders }) {
             onClick={() => setPeriod(key)}
             aria-pressed={period === key}
             className="px-3.5 py-2 rounded-xl text-xs font-bold shrink-0"
-            style={{ fontFamily: "'Fraunces', Georgia, serif", background: period === key ? T.ink : T.surface, color: period === key ? T.surface : T.ink, border: `1.5px solid rgba(90,70,48,0.12)` }}
+            style={{ fontFamily: "'Baloo 2', sans-serif", background: period === key ? T.ink : T.surface, color: period === key ? T.surface : T.ink, border: `1.5px solid rgba(90,70,48,0.12)` }}
           >
             {label}
           </button>
@@ -507,7 +507,7 @@ function DashboardPage({ orders, riders }) {
             <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style={{ background: `${c.tone}1A` }}>
               <c.icon size={18} color={c.tone} />
             </div>
-            <div className="text-2xl font-extrabold" style={{ fontFamily: "'Fraunces', Georgia, serif", color: T.ink }}>{c.value}</div>
+            <div className="text-2xl font-extrabold" style={{ fontFamily: "'Baloo 2', sans-serif", color: T.ink }}>{c.value}</div>
             <div className="text-xs opacity-60 mt-1" style={{ color: T.ink }}>{c.label}</div>
           </Card>
         ))}
@@ -515,7 +515,7 @@ function DashboardPage({ orders, riders }) {
 
       <Card className="p-5 md:p-6">
         <div className="flex items-center justify-between mb-4">
-          <span className="font-extrabold text-lg" style={{ fontFamily: "'Fraunces', Georgia, serif", color: T.ink }}>Recent Orders</span>
+          <span className="font-extrabold text-lg" style={{ fontFamily: "'Baloo 2', sans-serif", color: T.ink }}>Recent Orders</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -703,7 +703,7 @@ function ProductsPage({ query = "", products, extrasMaster, addProduct, updatePr
         <div className="flex gap-2 overflow-x-auto">
           {["all", ...CATEGORY_OPTIONS].map((c) => (
             <button key={c} onClick={() => setFilter(c)} className="px-3.5 py-2 rounded-xl text-sm font-bold shrink-0"
-              style={{ fontFamily: "'Fraunces', Georgia, serif", background: filter === c ? T.green : T.surface, color: filter === c ? T.surface : T.ink, border: `1.5px solid ${filter === c ? T.greenDark : "rgba(90,70,48,0.12)"}` }}>
+              style={{ fontFamily: "'Baloo 2', sans-serif", background: filter === c ? T.green : T.surface, color: filter === c ? T.surface : T.ink, border: `1.5px solid ${filter === c ? T.greenDark : "rgba(90,70,48,0.12)"}` }}>
               {c}
             </button>
           ))}
@@ -870,7 +870,7 @@ function OrderDrawer({ order, onClose, riders, onChangeStatus, onAssignRider, on
 
           <div className="text-xs font-bold uppercase opacity-50 mt-5 mb-1" style={{ color: T.ink }}>Items</div>
           <div className="text-sm opacity-80" style={{ color: T.ink }}>{order.items}</div>
-          <div className="font-extrabold mt-2 text-lg" style={{ fontFamily: "'Fraunces', Georgia, serif", color: T.brownDeep }}>{GHS(order.total)}</div>
+          <div className="font-extrabold mt-2 text-lg" style={{ fontFamily: "'Baloo 2', sans-serif", color: T.brownDeep }}>{GHS(order.total)}</div>
         </div>
 
         <div className="flex flex-col gap-4">
@@ -948,7 +948,7 @@ function OrdersPage({ query = "", orders, riders, changeStatus, assignRider, ver
       <div className="flex gap-2 overflow-x-auto mb-5">
         {["all", ...DELIVERY_STATUSES.filter((s) => s !== "PENDING"), "AWAITING"].map((s) => (
           <button key={s} onClick={() => setStatusFilter(s)} className="px-3.5 py-2 rounded-xl text-xs font-bold shrink-0"
-            style={{ fontFamily: "'Fraunces', Georgia, serif", background: statusFilter === s ? T.ink : T.surface, color: statusFilter === s ? T.surface : T.ink, border: `1.5px solid rgba(90,70,48,0.12)` }}>
+            style={{ fontFamily: "'Baloo 2', sans-serif", background: statusFilter === s ? T.ink : T.surface, color: statusFilter === s ? T.surface : T.ink, border: `1.5px solid rgba(90,70,48,0.12)` }}>
             {s === "all" ? "All" : s === "AWAITING" ? `Awaiting payment${unpaidCount ? ` (${unpaidCount})` : ""}` : s.replace(/_/g, " ")}
           </button>
         ))}
@@ -1006,7 +1006,7 @@ function OrdersPage({ query = "", orders, riders, changeStatus, assignRider, ver
             <Card className="p-4 active:scale-[0.99] transition-transform">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="font-extrabold" style={{ fontFamily: "'Fraunces', Georgia, serif", color: T.ink }}>{o.orderNumber}</div>
+                  <div className="font-extrabold" style={{ fontFamily: "'Baloo 2', sans-serif", color: T.ink }}>{o.orderNumber}</div>
                   <div className="text-sm truncate" style={{ color: T.ink }}>{o.customer}</div>
                 </div>
                 <div className="font-bold shrink-0" style={{ color: T.brownDeep }}>{GHS(o.total)}</div>
@@ -1085,7 +1085,7 @@ function RidersPage({ riders, addRider, updateRider, deleteRider, toggleActive, 
           <Card key={r.id} className="p-5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <div className="font-extrabold truncate" style={{ fontFamily: "'Fraunces', Georgia, serif", color: T.ink }}>{r.name}</div>
+                <div className="font-extrabold truncate" style={{ fontFamily: "'Baloo 2', sans-serif", color: T.ink }}>{r.name}</div>
                 <a href={`tel:${r.phone.replace(/\s/g, "")}`} className="text-sm flex items-center gap-1.5 mt-1 opacity-70" style={{ color: T.ink }}><Phone size={13} /> {r.phone}</a>
               </div>
               <div className="flex gap-2 shrink-0">
@@ -1138,7 +1138,7 @@ function DeliveryPage({ zones, addZone, removeZone, updateZoneFee, toggleZone, s
   return (
     <div className="p-5 md:p-8 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
       <Card className="p-6">
-        <div className="font-extrabold text-lg mb-1" style={{ fontFamily: "'Fraunces', Georgia, serif", color: T.ink }}>Delivery zones &amp; fees</div>
+        <div className="font-extrabold text-lg mb-1" style={{ fontFamily: "'Baloo 2', sans-serif", color: T.ink }}>Delivery zones &amp; fees</div>
         <p className="text-sm opacity-60 mb-5" style={{ color: T.ink }}>Fees are looked up server-side by zone — never trusted from the customer's browser.</p>
 
         <div className="flex flex-col gap-2 mb-5">
@@ -1168,7 +1168,7 @@ function DeliveryPage({ zones, addZone, removeZone, updateZoneFee, toggleZone, s
       </Card>
 
       <Card className="p-6 h-fit">
-        <div className="font-extrabold text-lg mb-4" style={{ fontFamily: "'Fraunces', Georgia, serif", color: T.ink }}>General settings</div>
+        <div className="font-extrabold text-lg mb-4" style={{ fontFamily: "'Baloo 2', sans-serif", color: T.ink }}>General settings</div>
         <div className="flex flex-col gap-5">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold" style={{ color: T.ink }}>Pickup available</span>
@@ -1279,7 +1279,7 @@ export default function CityBeansAdmin() {
               <Bell size={17} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-extrabold text-sm" style={{ fontFamily: "'Fraunces', Georgia, serif" }}>
+              <div className="font-extrabold text-sm" style={{ fontFamily: "'Baloo 2', sans-serif" }}>
                 New paid order {alerts.banner.order.orderNumber}
               </div>
               <div className="text-xs opacity-80 mt-0.5 truncate">

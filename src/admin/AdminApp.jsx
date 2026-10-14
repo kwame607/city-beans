@@ -1141,10 +1141,10 @@ function DeliveryPage({ zones, addZone, removeZone, updateZoneFee, toggleZone, s
         <div className="font-extrabold text-lg mb-1" style={{ fontFamily: "'Baloo 2', sans-serif", color: T.ink }}>Delivery zones &amp; fees</div>
         <p className="text-sm opacity-60 mb-5" style={{ color: T.ink }}>Fees are looked up server-side by zone — never trusted from the customer's browser.</p>
 
-        <div className="flex flex-col gap-2 mb-5">
+        <div className="flex flex-col gap-3 mb-6">
           {zones.map((z) => (
-            <div key={z.id} className="flex items-center gap-3 rounded-xl p-3" style={{ background: T.paper }}>
-              <span className="flex-1 font-semibold text-sm" style={{ color: T.ink }}>{z.name}</span>
+            <div key={z.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-xl px-4 py-4" style={{ background: T.paper }}>
+              <span className="basis-full sm:basis-0 sm:flex-1 sm:min-w-0 font-semibold text-[15px] leading-6 tracking-wide" style={{ color: T.ink }}>{z.name}</span>
               <span className="text-xs opacity-60" style={{ color: T.ink }}>GH₵</span>
               <input
                 type="number"

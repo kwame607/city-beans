@@ -42,5 +42,26 @@ export function useAdminRiders() {
     [riders, load]
   );
 
-  return { riders, loading, addRider, toggleActive, refetch: load };
+  const updateRider = useCallback(
+    async (id, form) => {
+      const { error } = await supabase
+        .from("riders")
+        .update({ name: form.name.trim(), phone: form.phone.trim() })
+        .eq("id", id);
+      load();
+      return { error };
+    },
+    [load]
+  );
+
+  const deleteRider = useCallback(
+    async (id) => {
+      const { error } = await supabase.from("riders").delete().eq("id", id);
+      load();
+      return { error };
+    },
+    [load]
+  );
+
+  return { riders, loading, addRider, updateRider, deleteRider, toggleActive, refetch: load };
 }

@@ -28,6 +28,60 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+// ---- Telegram alert (optional) -------------------------------------
+// Set secrets TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID to enable. Any
+// failure here is swallowed so it can never break payment confirmation.
+const esc = (v: unknown) =>
+  String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+async function notifyTelegram(
+  supabaseUrl: string,
+  sbHeaders: Record<string, string>,
+  orderId: string,
+  paidPesewas: number,
+) {
+  try {
+    const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
+    const chatId = Deno.env.get("TELEGRAM_CHAT_ID");
+    if (!token || !chatId) return;
+
+    let text = `\u{1F514} <b>New paid order</b>\nGH\u20B5${(paidPesewas / 100).toFixed(2)}`;
+    try {
+      const select =
+        "order_number,guest_name,guest_phone,method,total," +
+        "order_items(name_snapshot,quantity,order_item_extras(name_snapshot))," +
+        "delivery_addresses(area,ghana_post_gps,house_desc,instructions)";
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=${select}`,
+        { headers: sbHeaders },
+      );
+      const o = (await res.json())?.[0];
+      if (o) {
+        const items = (o.order_items || [])
+          .map((i: any) => {
+            const extras = (i.order_item_extras || []).map((e: any) => e.name_snapshot);
+            return `\u2022 ${esc(i.quantity)}\u00D7 ${esc(i.name_snapshot)}${extras.length ? ` (+ ${esc(extras.join(", "))})` : ""}`;
+          })
+          .join("\n");
+        const a = Array.isArray(o.delivery_addresses) ? o.delivery_addresses[0] : o.delivery_addresses;
+        const where = o.method === "DELIVERY"
+          ? `\nDelivery: ${esc(a?.area)}${a?.ghana_post_gps ? ` \u00B7 ${esc(a.ghana_post_gps)}` : ""}${a?.house_desc ? `\n${esc(a.house_desc)}` : ""}${a?.instructions ? `\nNote: ${esc(a.instructions)}` : ""}`
+          : "\nPickup";
+        text =
+          `\u{1F514} <b>New paid order ${esc(o.order_number)}</b>\n` +
+          `GH\u20B5${Number(o.total).toFixed(2)}\n\n${items}\n${where}\n\n` +
+          `${esc(o.guest_name)} \u00B7 ${esc(o.guest_phone)}`;
+      }
+    } catch (_) { /* fall back to the short message */ }
+
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
+    });
+  } catch (_) { /* never break the webhook */ }
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
@@ -123,6 +177,8 @@ Deno.serve(async (req) => {
     headers: sbHeaders,
     body: JSON.stringify({ status: "CONFIRMED" }),
   });
+
+  await notifyTelegram(supabaseUrl, sbHeaders, payment.order_id, amountPesewas);
 
   return new Response("ok", { status: 200 });
 });

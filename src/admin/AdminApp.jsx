@@ -15,7 +15,7 @@ import {
    DESIGN TOKENS — same system as the storefront
    ============================================================ */
 const FONTS = `
-@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap');
 `;
 
 const T = {
@@ -1248,7 +1248,7 @@ export default function CityBeansAdmin() {
   }, [page, alerts.unseen, alerts]);
 
   return (
-    <div style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", background: T.paper, minHeight: "100%" }} className="flex">
+    <div style={{ fontFamily: "'Nunito', system-ui, sans-serif", background: T.paper, minHeight: "100%" }} className="flex">
       <style>{FONTS}</style>
       <Sidebar page={page} setPage={goTo} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} unseen={alerts.unseen} />
       <div className="flex-1 min-w-0">

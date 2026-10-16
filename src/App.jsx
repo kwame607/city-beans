@@ -2050,13 +2050,19 @@ function CheckoutPage({
           </Button>
         </div>
 
-        <button
-          onClick={() => setPage({ name: "track", orderNumber: placedOrder.order_number, phone: form.phone })}
-          className="cb-no-print block w-full text-center mt-4 text-sm font-bold underline"
-          style={{ color: T.green }}
-        >
-          Track this order
-        </button>
+        <div className="cb-no-print mt-5 rounded-2xl border border-[#609223]/25 bg-[#E2EBD7]/60 p-4 sm:p-5 text-center">
+          <p className="text-sm text-black/60 mb-3">
+            Want to know when it's ready? Follow your order live.
+          </p>
+          <button
+            onClick={() => setPage({ name: "track", orderNumber: placedOrder.order_number, phone: form.phone })}
+            className="group inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-bold tracking-wide text-[#FFFBEF] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#609223]"
+            style={{ background: T.green, fontFamily: "Georgia, 'Times New Roman', serif" }}
+          >
+            Track this order
+            <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+          </button>
+        </div>
 
       </div>
     );

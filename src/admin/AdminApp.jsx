@@ -326,9 +326,9 @@ function Sidebar({ page, setPage, mobileOpen, setMobileOpen, unseen = 0 }) {
           <button
             key={key}
             onClick={() => { setPage(key); setMobileOpen(false); }}
-            className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+            className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[15px] font-bold transition-colors"
             style={{
-              fontFamily: "'Baloo 2', sans-serif",
+              fontFamily: "'Nunito', sans-serif",
               background: page === key ? "rgba(232,151,59,0.16)" : "transparent",
               color: page === key ? T.orange : "rgba(245,234,198,0.75)",
             }}
